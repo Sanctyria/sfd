@@ -1,0 +1,151 @@
+<script lang="ts">
+	import { onMount } from 'svelte';
+	import { getContext } from 'svelte';
+	import { ArrowUpRight } from '@lucide/svelte';
+	import { brandIconPaths } from '#lib/marketing/brandIcons.js';
+
+	type SiteAudio = {
+		getMuted: () => boolean;
+		getVolume: () => number;
+	};
+
+	const audio = getContext<SiteAudio>('site-audio');
+	let videoElement: HTMLVideoElement;
+	let musicElement: HTMLAudioElement;
+	let videoLoaded = $state(false);
+	let videoEnded = $state(false);
+	let muted = $state(audio.getMuted());
+	let volume = $state(audio.getVolume());
+
+	onMount(() => {
+		videoElement.playbackRate = 0.3;
+		videoElement.play().catch(() => undefined);
+	});
+
+	$effect(() => {
+		muted = audio.getMuted();
+		volume = audio.getVolume();
+		if (!musicElement) return;
+		musicElement.muted = muted;
+		musicElement.volume = volume;
+		if (!muted) musicElement.play().catch(() => undefined);
+	});
+</script>
+
+<svelte:head>
+	<title>Sanctyria | Dark Fantasy Universe &amp; Creative Sanctuary</title>
+	<meta
+		name="description"
+		content="Step inside Sanctyria, a dark fantasy universe and creative transmedia ecosystem. Gather around the Eternal Flame, explore magitech systems, and join our Discord."
+	/>
+	<meta
+		name="keywords"
+		content="Sanctyria, dark fantasy universe, creative fantasy community, transmedia fantasy project, Eternal Flame, Flameborn"
+	/>
+	<link rel="canonical" href="https://sanctyria.com" />
+	<meta name="robots" content="index, follow" />
+	<meta property="og:type" content="website" />
+	<meta property="og:url" content="https://sanctyria.com" />
+	<meta property="og:title" content="Sanctyria | Dark Fantasy Universe &amp; Creative Sanctuary" />
+	<meta
+		property="og:description"
+		content="Step inside Sanctyria, a dark fantasy universe and creative transmedia ecosystem. Gather around the Eternal Flame, explore magitech systems, and join our Discord."
+	/>
+	<meta property="og:image" content="https://sanctyria.com/sitepreview.png" />
+	<meta property="og:image:width" content="1200" />
+	<meta property="og:image:height" content="630" />
+	<meta name="twitter:card" content="summary_large_image" />
+	<meta name="twitter:url" content="https://sanctyria.com" />
+	<meta name="twitter:title" content="Sanctyria | Dark Fantasy Universe &amp; Creative Sanctuary" />
+	<meta
+		name="twitter:description"
+		content="Step inside Sanctyria, a dark fantasy universe and creative transmedia ecosystem. Gather around the Eternal Flame, explore magitech systems, and join our Discord."
+	/>
+	<meta name="twitter:image" content="https://sanctyria.com/sitepreview.png" />
+</svelte:head>
+
+<div class="relative flex h-screen min-h-screen w-full flex-col overflow-hidden bg-transparent">
+	<div class="absolute inset-0 z-0 overflow-hidden bg-black">
+		<video
+			bind:this={videoElement}
+			src="/assets/video/worldloop.mp4"
+			class="h-full w-full object-cover"
+			muted
+			playsinline
+			preload="auto"
+			loop
+			oncanplay={() => (videoLoaded = true)}
+			onloadeddata={() => (videoLoaded = true)}
+			onended={() => (videoEnded = true)}
+			style:opacity={videoLoaded ? 1 : 0}
+		>
+		</video>
+		<div
+			class="pointer-events-none absolute inset-x-0 bottom-0 h-[35%] bg-gradient-to-t from-black to-transparent"
+		></div>
+	</div>
+	<audio
+		bind:this={musicElement}
+		src="/assets/music/eternalqueen.mp3"
+		autoplay
+		loop
+		{muted}
+		class="hidden"
+	></audio>
+	<main class="relative z-10 flex flex-grow flex-col items-center justify-center">
+		<section
+			class="relative z-10 mx-auto flex w-full max-w-7xl flex-col items-center justify-center px-6 text-center"
+			style="padding-top: calc(8rem - 75px); padding-bottom: 10rem"
+		>
+			<h1
+				class="animate-fade-rise max-w-7xl font-display text-5xl leading-[0.95] text-brand-black select-none sm:text-7xl md:text-8xl"
+			>
+				Beyond <span class="font-normal text-white italic">silence,</span> we build
+				<span
+					class="animate-ember-glow font-normal text-orange-500 italic"
+					style="text-shadow: 0 0 40px rgba(249,115,22,0.55), 0 0 80px rgba(251,146,60,0.25)"
+					>the eternal.</span
+				>
+			</h1>
+			<p
+				class="animate-fade-rise-delay mt-8 max-w-2xl font-body text-base leading-relaxed text-white sm:text-lg"
+				style="text-shadow: 0 1px 3px rgba(0,0,0,0.85)"
+			>
+				Building platforms for brilliant minds, fearless makers, and thoughtful souls. Through the
+				noise, we craft digital havens for deep work and pure flows.
+			</p>
+			<div
+				class="animate-fade-rise-delay-2 mt-12 flex w-full flex-col items-center gap-3 sm:w-auto sm:flex-row sm:gap-4"
+			>
+				<a
+					href="/about"
+					class={`w-full rounded-full bg-brand-black px-10 py-5 text-base font-medium text-white shadow-md transition-all duration-300 hover:scale-[1.03] hover:shadow-lg active:scale-[0.98] sm:w-auto sm:px-14 ${videoEnded ? 'shadow-[0_0_25px_rgba(0,0,0,0.6)] ring-2 ring-brand-black/80 ring-offset-2' : ''}`}
+					>Begin Journey</a
+				>
+				<a
+					href="https://discord.gg/sanctyria"
+					target="_blank"
+					rel="noopener noreferrer"
+					aria-label="Join our Discord – Access Realm"
+					class="group relative flex w-full items-center justify-center gap-3 overflow-hidden rounded-full border border-brand-black/15 bg-white/60 px-10 py-5 text-base font-medium text-brand-black shadow-sm backdrop-blur-sm transition-all duration-300 hover:border-brand-black hover:bg-brand-black hover:text-white hover:shadow-md active:scale-[0.98] sm:w-auto sm:px-12"
+				>
+					<span
+						class="pointer-events-none absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/10 to-transparent transition-transform duration-600 group-hover:translate-x-full"
+					></span>
+					<svg
+						viewBox="0 0 24 24"
+						fill="currentColor"
+						aria-hidden="true"
+						class="relative h-5 w-5 shrink-0 text-[#5865F2] transition-colors duration-300 group-hover:text-white"
+					>
+						{#each brandIconPaths.discord as path (path)}<path d={path} />{/each}
+					</svg>
+					<span class="relative">Access Realm</span>
+					<ArrowUpRight
+						class="relative h-3.5 w-3.5 shrink-0 opacity-50 transition-all group-hover:translate-x-0.5 group-hover:opacity-100"
+					/>
+				</a>
+			</div>
+		</section>
+	</main>
+</div>

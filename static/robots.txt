@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://sanctyria.com/sitemap.xml

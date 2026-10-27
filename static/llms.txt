@@ -1,0 +1,21 @@
+# Sanctyria
+
+> Sanctyria is a dark fantasy universe and creative transmedia ecosystem built around the Eternal Flame.
+
+The website contains the world guide, its eight nations and Flameborn characters, studio work, roadmap, partnerships, and journal articles.
+
+## Main Pages
+- [Home](https://sanctyria.com/): Introduction to Sanctyria.
+- [About](https://sanctyria.com/about): Universe background, terminology, and FAQs.
+- [Flameborns](https://sanctyria.com/flameborns): The four elemental avatars.
+- [Nations](https://sanctyria.com/nations): The eight nations of Eternia.
+- [Studio](https://sanctyria.com/studio): Stories, music, characters, and other media.
+- [Journal](https://sanctyria.com/journal): Worldbuilding notes and studio dispatches.
+- [Community](https://sanctyria.com/home): Public conversations, creative work, and community discovery.
+- [Roadmap](https://sanctyria.com/roadmap): Development phases.
+- [Partnerships](https://sanctyria.com/partnership): Collaboration information.
+- [Reach Us](https://sanctyria.com/reach-us): Contact and social channels.
+
+## Discovery
+- [XML Sitemap](https://sanctyria.com/sitemap.xml)
+- [Robots Instructions](https://sanctyria.com/robots.txt)
