@@ -11,6 +11,7 @@ export interface CommunityReply {
 	color: string;
 	avatarUrl?: string | null;
 	verified?: boolean;
+	isPostAuthor?: boolean;
 	isCommunityOwner?: boolean;
 	text: string;
 	reactionCount?: number;
@@ -77,6 +78,7 @@ export interface CommunityPost {
 	isDownvoted?: boolean;
 	isBookmarked?: boolean;
 	canManage?: boolean;
+	indexable?: boolean;
 	replies: CommunityReply[];
 	joinedCommunity: boolean;
 }

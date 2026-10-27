@@ -10,6 +10,7 @@ interface ApiProfileResponse {
 		bio: string;
 		avatarUrl: string | null;
 		avatarVersion: string | null;
+		bannerUrl?: string | null;
 		initials: string | null;
 	};
 }
@@ -35,7 +36,7 @@ export const GET: RequestHandler = async ({ fetch, params }) => {
 			title: profile.displayName,
 			description: profile.bio || `@${profile.username} on the Sanctyria community.`,
 			eyebrow: `COMMUNITY PROFILE · @${profile.username}`,
-			imageUrl: profile.avatarUrl,
+			imageUrl: profile.avatarUrl ?? profile.bannerUrl,
 			cacheVersion: profile.avatarVersion ?? undefined,
 			initials:
 				profile.initials ??

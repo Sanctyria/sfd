@@ -19,6 +19,7 @@
 		List,
 		MessageCircle,
 		MoreHorizontal,
+		PenLine,
 		Pencil,
 		Plus,
 		Search,
@@ -688,7 +689,7 @@
 		content="Explore public conversations, creative work, and communities across Sanctyria."
 	/>
 	<link rel="canonical" href="https://sanctyria.com/home" />
-	<meta name="robots" content="index, follow" />
+	<meta name="robots" content="noindex, follow" />
 	<meta property="og:type" content="website" />
 	<meta property="og:url" content="https://sanctyria.com/home" />
 	<meta property="og:title" content="Sanctyria Community" />
@@ -1391,7 +1392,12 @@
 																			href={`/u/${encodeURIComponent(reply.handle.slice(1))}`}
 																			class="mr-1 font-medium text-white/85 hover:text-orange-100"
 																			>{reply.name}</a
-																		>{#if reply.isCommunityOwner}<span
+																		>{#if reply.isPostAuthor}<span
+																				class="mr-1 inline-flex items-center gap-0.5 text-[9px] text-sky-200/75"
+																				title="Author of this post"
+																				><PenLine size={10} />Author</span
+																			>{/if}
+																		{#if reply.isCommunityOwner}<span
 																				class="mr-1 inline-flex items-center gap-0.5 text-[9px] text-orange-200/75"
 																				title="Community owner"><Crown size={10} />Owner</span
 																			>{/if}

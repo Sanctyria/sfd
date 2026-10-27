@@ -10,6 +10,7 @@
 		Globe,
 		MessageCircle,
 		MoreHorizontal,
+		PenLine,
 		Pencil,
 		Skull,
 		Share2,
@@ -338,7 +339,7 @@
 	<title>{data.post.name} in {data.post.community} | Sanctyria Community</title>
 	<meta name="description" content={data.post.text} />
 	<link rel="canonical" href={postUrl} />
-	<meta name="robots" content="index, follow" />
+	<meta name="robots" content={data.post.indexable ? 'index, follow' : 'noindex, follow'} />
 	<meta property="og:type" content="article" />
 	<meta property="og:url" content={postUrl} />
 	<meta property="og:title" content={`${data.post.name} in ${data.post.community}`} />
@@ -559,7 +560,11 @@
 															href={`/u/${encodeURIComponent(reply.handle.slice(1))}`}
 															class="mr-1 font-medium text-white/85 hover:text-orange-100"
 															>{reply.name}</a
-														>{#if reply.isCommunityOwner}<span
+														>{#if reply.isPostAuthor}<span
+																class="mr-1 inline-flex items-center gap-0.5 text-[9px] text-sky-200/75"
+																title="Author of this post"><PenLine size={10} />Author</span
+															>{/if}
+														{#if reply.isCommunityOwner}<span
 																class="mr-1 inline-flex items-center gap-0.5 text-[9px] text-orange-200/75"
 																title="Community owner"><Crown size={10} />Owner</span
 															>{/if}

@@ -11,7 +11,7 @@
 	let { data }: PageProps = $props();
 	const maximum = $derived(Math.max(1, ...data.daily.map((item) => item.pageViews)));
 	const communityMetrics = $derived([
-		{ label: 'Active members', value: data.community.activeUsers, icon: UsersRound },
+		{ label: 'Registered accounts', value: data.community.activeUsers, icon: UsersRound },
 		{ label: 'Communities', value: data.community.activeCommunities, icon: Building2 },
 		{ label: 'Visible posts', value: data.community.posts, icon: FileText },
 		{ label: 'Open reports', value: data.community.openReports, icon: CircleAlert }

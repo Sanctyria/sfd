@@ -9,16 +9,23 @@
 	let busyId = $state('');
 	let actionError = $state('');
 
-	async function setCommunityStatus(
+	async function setCommunityAction(
 		community: (typeof data.items)[number],
-		action: 'archive' | 'restore'
+		action: 'archive' | 'restore' | 'enable_indexing' | 'disable_indexing'
 	) {
 		actionError = '';
 		if (reason.trim().length < 10) {
-			actionError = 'Enter a moderation reason of at least 10 characters.';
+			actionError = 'Enter an admin action reason of at least 10 characters.';
 			return;
 		}
-		const verb = action === 'archive' ? 'Archive' : 'Restore';
+		const verb =
+			action === 'archive'
+				? 'Archive'
+				: action === 'restore'
+					? 'Restore'
+					: action === 'enable_indexing'
+						? 'Enable search indexing for'
+						: 'Disable search indexing for';
 		if (
 			!window.confirm(
 				`${verb} “${community.name}”? The action will be written to the global audit log.`
@@ -78,7 +85,7 @@
 			class="core-field"
 			bind:value={reason}
 			maxlength="500"
-			placeholder="Required to archive or restore (10+ characters)"
+			placeholder="Required for admin actions (10+ characters)"
 		/>
 	</div>
 	<div class="space-list">
@@ -90,12 +97,16 @@
 						<h2>{community.name}</h2>
 						<span class={`core-pill ${community.status}`}>{community.status}</span
 						>{#if !community.isPublic}<span class="core-pill">private</span>{/if}
+						{#if community.indexingApproved}<span class="core-pill">indexing approved</span>{/if}
 					</div>
 					<p>{community.description || 'No description has been added.'}</p>
 					<div class="space-meta">
 						<span>/r/{community.slug}</span>
 						<span>{community.memberCount.toLocaleString()} members</span>
 						<span>{community.postCount.toLocaleString()} posts</span>
+						<span>{community.eligiblePostCount.toLocaleString()} eligible / 90d</span>
+						<span>{community.eligibleAuthorCount.toLocaleString()} active authors / 90d</span>
+						<span>{community.description.trim().length} description chars</span>
 						<span>Created {new Date(community.createdAt).toLocaleDateString()}</span>
 					</div>
 				</div>
@@ -104,17 +115,38 @@
 					><span>@{community.ownerUsername ?? 'deleted'}</span>
 				</div>
 				<div class="space-actions">
+					{#if community.indexingApproved}
+						<button
+							class="core-button secondary"
+							disabled={busyId === community.id || reason.trim().length < 10}
+							onclick={() => setCommunityAction(community, 'disable_indexing')}
+							>Disable indexing</button
+						>
+					{:else}
+						<button
+							class="core-button secondary"
+							disabled={busyId === community.id ||
+								reason.trim().length < 10 ||
+								!community.isPublic ||
+								community.status !== 'active' ||
+								community.description.trim().length < 80 ||
+								community.eligiblePostCount < 10 ||
+								community.eligibleAuthorCount < 3}
+							onclick={() => setCommunityAction(community, 'enable_indexing')}
+							>Approve indexing</button
+						>
+					{/if}
 					{#if community.status === 'active'}
 						<button
 							class="core-button danger"
 							disabled={busyId === community.id || reason.trim().length < 10}
-							onclick={() => setCommunityStatus(community, 'archive')}>Archive</button
+							onclick={() => setCommunityAction(community, 'archive')}>Archive</button
 						>
 					{:else}
 						<button
 							class="core-button secondary"
 							disabled={busyId === community.id || reason.trim().length < 10}
-							onclick={() => setCommunityStatus(community, 'restore')}
+							onclick={() => setCommunityAction(community, 'restore')}
 							><RotateCcw size={13} /> Restore</button
 						>
 					{/if}

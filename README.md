@@ -5,7 +5,9 @@ The Sanctyria web application is a server-rendered SvelteKit site for the public
 ## Features
 
 - Public marketing pages, journal, studio, and search-engine/social metadata.
-- Community feeds, profiles, communities, replies, notifications, and moderation.
+- A privacy-choice banner gates first-party pageview aggregates and optional browser error monitoring until visitors opt in.
+- The sitemap includes only published editorial routes and user-generated pages that pass the server-side indexing policy.
+- Community feeds, profiles with customizable avatar and banner image URLs, communities, replies, notifications, and moderation.
 - Global administration under `/core`, including user, community, moderation, marketing, banner, and analytics tools.
 - Server-side generated 1200 × 630 PNG social preview images for branded routes and community/profile pages.
 - Same-origin community API proxy at `/api/community/*`.
@@ -33,7 +35,7 @@ npm install
 npm run dev
 ```
 
-By default, the community API proxy targets `http://127.0.0.1:3000` outside production. Production requires `COMMUNITY_BACKEND_URL`; set it to the backend origin in the frontend process environment before starting the server.
+By default, the community API proxy targets `http://127.0.0.1:3000` outside production. Production requires `COMMUNITY_BACKEND_URL`; set it to the backend origin in the frontend process environment before starting the server. `VITE_SENTRY_DSN` is optional and enables browser error monitoring only after a visitor accepts optional analytics and diagnostics.
 
 Run the backend separately from `../Backend/`. The web UI and same-origin proxy are not substitutes for backend authentication or authorization; protected actions are verified by the API.
 
@@ -50,7 +52,7 @@ Run the backend separately from `../Backend/`. The web UI and same-origin proxy 
 
 ## Social preview images
 
-The `/api/og/page`, `/api/og/profile/:username`, and `/api/og/community/:slug` endpoints return generated 1200 × 630 PNG images. They use the Sanctyria logo and character art; profile and community previews use their avatar when available, with initials as a fallback. The `sharp` dependency renders and optimizes the PNGs.
+The `/api/og/page`, `/api/og/profile/:username`, and `/api/og/community/:slug` endpoints return generated 1200 × 630 PNG images. Profile and community previews use their avatar when available, otherwise their banner image; when neither is available, profile previews use initials and community previews use the branded character artwork. The `sharp` dependency renders and optimizes the PNGs.
 
 Journal article pages use each article's own image. Shared image posts use the post image, and link-preview cards use the linked page's metadata image when available; the branded artwork is used only when no thumbnail exists.
 
@@ -86,6 +88,10 @@ static/
 - The social image routes run on the server and require the Node-compatible `sharp` package and the files under `static/assets/`.
 - Branded social-preview text is rendered with Noto Sans and Noto Serif from `static/assets/fonts/` to avoid dependence on fonts installed by the hosting platform. `netlify.toml` includes those fonts and the renderer's image assets in the server function package. The included SIL Open Font License files document redistribution terms.
 - Configure the production site's canonical origin consistently with the `https://sanctyria.com` social metadata URLs.
+- The privacy banner stores a versioned choice in browser local storage. Optional first-party pageview aggregates and browser Sentry are disabled until opt-in; Do Not Track remains honored. Review the consent wording, applicable regional requirements, disclosures, and retention policy before production use.
+- Configure `VITE_SENTRY_DSN` for the browser project and `SENTRY_DSN` for the backend project only after creating the corresponding Sentry projects. Both SDK integrations disable automatic user, cookie, header, body, and query-string collection; the browser SDK starts only after optional consent.
+- Apply backend migrations before deploying the indexing policy. Community pages require Core approval and current quality thresholds; profiles remain noindex unless the member opts in and meets the profile eligibility checks.
+- Verify `https://sanctyria.com` in Google Search Console and Bing Webmaster Tools, then submit `https://sanctyria.com/sitemap.xml`. The full operational checklist is in `SEO_ANALYTICS_PLAN.md`.
 - Keep secrets in the hosting platform's secret manager; do not commit `.env` files, API keys, or credentials.
 
 ## Related service

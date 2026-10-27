@@ -10,11 +10,14 @@ interface CommunitiesResponse {
 		description: string;
 		status: 'active' | 'archived';
 		isPublic: boolean;
+		indexingApproved: boolean;
 		createdAt: string;
 		ownerUsername: string | null;
 		ownerDisplayName: string | null;
 		memberCount: number;
 		postCount: number;
+		eligiblePostCount: number;
+		eligibleAuthorCount: number;
 	}[];
 	nextCursor: string | null;
 }

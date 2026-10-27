@@ -9,6 +9,7 @@ interface ApiCommunityResponse {
 		slug: string;
 		description: string;
 		avatarUrl?: string | null;
+		bannerUrl?: string | null;
 		updatedAt?: string;
 	};
 }
@@ -34,7 +35,7 @@ export const GET: RequestHandler = async ({ fetch, params }) => {
 			title: community.name,
 			description: community.description || `Join ${community.name} on the Sanctyria community.`,
 			eyebrow: `COMMUNITY · /R/${community.slug.toUpperCase()}`,
-			imageUrl: community.avatarUrl,
+			imageUrl: community.avatarUrl ?? community.bannerUrl,
 			cacheVersion: community.updatedAt,
 			initials: community.name
 				.split(/\s+/)

@@ -6,10 +6,13 @@ export interface ApiProfile {
 	bio: string;
 	avatarUrl: string | null;
 	avatarVersion: string | null;
+	bannerUrl?: string | null;
 	initials: string | null;
 	avatarColor: string | null;
 	ember: number;
 	verified: boolean;
+	indexingOptedIn?: boolean;
+	indexable?: boolean;
 	createdAt: string;
 	followerCount: number;
 	followingCount: number;
@@ -43,6 +46,7 @@ export interface ApiCommunity {
 	avatarUrl?: string | null;
 	bannerUrl?: string | null;
 	websiteUrl?: string | null;
+	indexable?: boolean;
 	memberCount: number;
 	activeEmber?: number;
 	createdAt: string;
@@ -108,6 +112,7 @@ export interface ApiReply {
 	canManage?: boolean;
 	reactionCount?: number;
 	reacted?: boolean;
+	isPostAuthor?: boolean;
 	isCommunityOwner?: boolean;
 	author: ApiAuthor;
 }
@@ -139,6 +144,7 @@ export interface ApiPost {
 	isDownvoted?: boolean;
 	isBookmarked?: boolean;
 	canManage?: boolean;
+	indexable?: boolean;
 	createdAt: string;
 	community: Pick<ApiCommunity, 'id' | 'slug' | 'name' | 'avatarUrl'>;
 	author: ApiAuthor;
@@ -240,6 +246,7 @@ export function toCommunityReply(reply: ApiReply): CommunityReply {
 		color: reply.author.avatarColor ?? '#66744b',
 		avatarUrl: reply.author.avatarUrl,
 		verified: reply.author.verified,
+		isPostAuthor: reply.isPostAuthor ?? false,
 		isCommunityOwner: reply.isCommunityOwner ?? false,
 		text: reply.body,
 		reactionCount: reply.reactionCount ?? 0,
@@ -277,6 +284,7 @@ export function toCommunityPost(post: ApiPost, joinedSlugs: string[] = []): Comm
 		isDownvoted: post.isDownvoted ?? false,
 		isBookmarked: post.isBookmarked ?? false,
 		canManage: post.canManage ?? false,
+		indexable: post.indexable ?? false,
 		replies: post.replies?.map(toCommunityReply) ?? [],
 		joinedCommunity: joinedSlugs.includes(post.community.slug)
 	};

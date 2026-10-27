@@ -6,7 +6,7 @@
 		Flame,
 		MessageCircle,
 		Pencil,
-		Skull,
+		Share2,
 		ShieldCheck,
 		VolumeX,
 		X,
@@ -24,6 +24,7 @@
 	import CommunityBottomNav from '#lib/community/components/CommunityBottomNav.svelte';
 	import CommunityFollowButton from '#lib/community/components/CommunityFollowButton.svelte';
 	import CommunityLinkPreview from '#lib/community/components/CommunityLinkPreview.svelte';
+	import CommunityPostActions from '#lib/community/components/CommunityPostActions.svelte';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
@@ -36,7 +37,13 @@
 	let activityLoading = $state(false);
 	let loadedActivityKey = '';
 	let editOpen = $state(false);
-	let profileDraft = $state({ displayName: '', bio: '', avatarUrl: '' });
+	let profileDraft = $state({
+		displayName: '',
+		bio: '',
+		avatarUrl: '',
+		bannerUrl: '',
+		indexingOptedIn: false
+	});
 	let profileEditError = $state('');
 	let profileSaving = $state(false);
 	let safetyActionLoading = $state(false);
@@ -148,11 +155,25 @@
 		window.setTimeout(() => (toast = ''), 2200);
 	}
 
+	function shareProfile() {
+		const url = `${window.location.origin}/u/${encodeURIComponent(data.profile.username)}`;
+		if (navigator.clipboard) {
+			navigator.clipboard.writeText(url).then(
+				() => showToast('Profile link copied'),
+				() => showToast(url)
+			);
+		} else {
+			showToast(url);
+		}
+	}
+
 	function openProfileEditor() {
 		profileDraft = {
 			displayName: data.profile.name,
 			bio: data.profile.bio,
-			avatarUrl: data.profile.avatarUrl ?? ''
+			avatarUrl: data.profile.avatarUrl ?? '',
+			bannerUrl: data.profile.bannerUrl ?? '',
+			indexingOptedIn: data.profile.indexingOptedIn
 		};
 		profileEditError = '';
 		editOpen = true;
@@ -168,7 +189,9 @@
 				body: JSON.stringify({
 					displayName: profileDraft.displayName,
 					bio: profileDraft.bio,
-					avatarUrl: profileDraft.avatarUrl.trim() || null
+					avatarUrl: profileDraft.avatarUrl.trim() || null,
+					bannerUrl: profileDraft.bannerUrl.trim() || null,
+					indexingOptedIn: profileDraft.indexingOptedIn
 				})
 			});
 			editOpen = false;
@@ -226,7 +249,7 @@
 		rel="canonical"
 		href={`https://sanctyria.com/u/${encodeURIComponent(data.profile.username)}`}
 	/>
-	<meta name="robots" content="index, follow" />
+	<meta name="robots" content={data.profile.indexable ? 'index, follow' : 'noindex, follow'} />
 	<meta property="og:type" content="profile" />
 	<meta
 		property="og:url"
@@ -247,8 +270,17 @@
 	<main class="mx-auto w-full max-w-5xl px-2 pb-28 sm:px-8 md:pb-12 xl:px-12">
 		<section class="mt-5 border-b border-white/[0.08] pb-6" aria-labelledby="profile-name">
 			<div
-				class="h-24 border border-white/[0.06] bg-[linear-gradient(115deg,rgba(249,115,22,.16),rgba(9,10,10,.1)_55%,rgba(132,165,189,.12))] sm:h-32"
-			></div>
+				class="relative h-24 overflow-hidden border border-white/[0.06] bg-[linear-gradient(115deg,rgba(249,115,22,.16),rgba(9,10,10,.1)_55%,rgba(132,165,189,.12))] sm:h-32"
+			>
+				{#if data.profile.bannerUrl}
+					<img
+						src={data.profile.bannerUrl}
+						alt=""
+						class="absolute inset-0 h-full w-full object-cover"
+					/>
+					<div class="absolute inset-0 bg-black/20"></div>
+				{/if}
+			</div>
 			<div class="flex flex-wrap items-end justify-between gap-4 px-2">
 				<div class="-mt-7 flex items-end gap-3 sm:-mt-9 sm:gap-4">
 					<span
@@ -269,6 +301,14 @@
 				</div>
 				{#if data.profile.isOwnProfile}
 					<div class="mb-1 flex items-center gap-2">
+						<button
+							type="button"
+							onclick={shareProfile}
+							aria-label="Share profile"
+							title="Share profile"
+							class="inline-flex h-9 w-9 items-center justify-center border border-white/20 text-white/75 transition-colors hover:border-orange-200/50 hover:text-orange-100"
+							><Share2 size={16} /></button
+						>
 						<a
 							href="/saved"
 							aria-label="Saved posts"
@@ -296,6 +336,14 @@
 					</div>
 				{:else}
 					<div class="mb-1 flex flex-wrap items-center justify-end gap-2">
+						<button
+							type="button"
+							onclick={shareProfile}
+							aria-label="Share profile"
+							title="Share profile"
+							class="flex h-9 w-9 items-center justify-center border border-white/15 text-white/60 hover:border-orange-200/40 hover:text-orange-100"
+							><Share2 size={15} /></button
+						>
 						{#if !data.profile.isBlockedBy}
 							<button
 								type="button"
@@ -501,17 +549,11 @@
 											domain={post.linkDomain}
 										/>
 									{/if}
-									<div class="mt-3 flex items-center gap-4 text-[10px] text-white/40">
-										<span class="inline-flex items-center gap-1"
-											><Flame size={13} />{post.votes}</span
-										>
-										<span class="inline-flex items-center gap-1"
-											><Skull size={12} />{post.downvotes ?? 0}</span
-										>
-										<span class="inline-flex items-center gap-1"
-											><MessageCircle size={12} />{post.replyCount ?? 0}</span
-										>
-									</div>
+									<CommunityPostActions
+										{post}
+										viewerUsername={data.communityUser?.username}
+										returnTo={`/u/${encodeURIComponent(data.profile.username)}`}
+									/>
 								</div>
 							</div>
 						</article>
@@ -638,6 +680,18 @@
 						<p class="mt-0.5 truncate text-[10px] text-white/40">@{data.profile.username}</p>
 					</div>
 				</div>
+				<div
+					class="relative mt-4 h-20 overflow-hidden border border-white/[0.08] bg-[linear-gradient(115deg,rgba(249,115,22,.16),rgba(9,10,10,.1)_55%,rgba(132,165,189,.12))]"
+				>
+					{#if profileDraft.bannerUrl}
+						<img
+							src={profileDraft.bannerUrl}
+							alt="Profile banner preview"
+							class="absolute inset-0 h-full w-full object-cover"
+						/>
+						<div class="absolute inset-0 bg-black/20"></div>
+					{/if}
+				</div>
 				<form onsubmit={saveProfile} class="mt-5 space-y-4">
 					<div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
 						<label class="block text-xs text-white/65"
@@ -668,17 +722,51 @@
 							>{profileDraft.bio.length}/300</span
 						></label
 					>
-					<label class="block text-xs text-white/65"
-						>Avatar image URL<input
+					<label
+						class="flex items-start gap-3 border border-white/[0.08] bg-black/20 p-3 text-xs text-white/70"
+					>
+						<input
+							type="checkbox"
+							bind:checked={profileDraft.indexingOptedIn}
+							class="mt-0.5 accent-orange-300"
+						/>
+						<span>
+							<strong class="font-medium text-white/90"
+								>Allow search engines to index my profile</strong
+							>
+							<span class="mt-1 block leading-5 text-white/45">
+								Your profile is eligible only while your account is active, your bio has at least 20
+								characters, and you have a public post in an approved community. You can turn this
+								off at any time.
+							</span>
+						</span>
+					</label>
+					<label class="block text-xs text-white/65">
+						Avatar image URL
+						<input
 							bind:value={profileDraft.avatarUrl}
 							type="url"
 							inputmode="url"
 							placeholder="https://"
 							class="mt-1.5 w-full border border-white/10 bg-black/20 px-3 py-2.5 text-sm text-white outline-none placeholder:text-white/25 focus:border-orange-200/40"
-						/><span class="mt-1 block text-[10px] text-white/35"
-							>Use a secure HTTPS image address. Leave blank to use your initials.</span
-						></label
-					>
+						/>
+						<span class="mt-1 block text-[10px] text-white/35">
+							Use a secure HTTPS image address. Leave blank to use your initials.
+						</span>
+					</label>
+					<label class="block text-xs text-white/65">
+						Profile banner image URL
+						<input
+							bind:value={profileDraft.bannerUrl}
+							type="url"
+							inputmode="url"
+							placeholder="https://"
+							class="mt-1.5 w-full border border-white/10 bg-black/20 px-3 py-2.5 text-sm text-white outline-none placeholder:text-white/25 focus:border-orange-200/40"
+						/>
+						<span class="mt-1 block text-[10px] text-white/35">
+							Use a secure HTTPS image address. Leave blank to remove your banner.
+						</span>
+					</label>
 					{#if profileEditError}<p
 							role="alert"
 							class="border border-red-300/15 bg-red-300/[0.04] px-3 py-2.5 text-xs text-red-200"

@@ -1,16 +1,7 @@
 <script lang="ts">
 	import { goto, invalidate } from '$app/navigation';
 	import { onMount } from 'svelte';
-	import {
-		ArrowUpRight,
-		BadgeCheck,
-		Flame,
-		Globe,
-		MessageCircle,
-		Pencil,
-		Plus,
-		X
-	} from '@lucide/svelte';
+	import { ArrowUpRight, BadgeCheck, Flame, Globe, Pencil, Plus, Share2, X } from '@lucide/svelte';
 	import { communitySlug, videoEmbedUrl } from '#lib/community/community.js';
 	import {
 		communityApi,
@@ -20,6 +11,7 @@
 	import CommunityBottomNav from '#lib/community/components/CommunityBottomNav.svelte';
 	import CommunityFollowButton from '#lib/community/components/CommunityFollowButton.svelte';
 	import CommunityLinkPreview from '#lib/community/components/CommunityLinkPreview.svelte';
+	import CommunityPostActions from '#lib/community/components/CommunityPostActions.svelte';
 	import { subscribeCommunityRealtime } from '#lib/community/communityRealtime.js';
 	import type { PageProps } from './$types';
 
@@ -101,6 +93,23 @@
 		void goto(
 			`/home?feed=community&compose=1&community=${encodeURIComponent(data.community.slug)}`
 		);
+	}
+
+	function showToast(message: string) {
+		toast = message;
+		window.setTimeout(() => (toast = ''), 2200);
+	}
+
+	function shareCommunity() {
+		const url = `${window.location.origin}/r/${encodeURIComponent(data.community.slug)}`;
+		if (navigator.clipboard) {
+			navigator.clipboard.writeText(url).then(
+				() => showToast('Community link copied'),
+				() => showToast(url)
+			);
+		} else {
+			showToast(url);
+		}
 	}
 
 	function openEditor() {
@@ -292,7 +301,7 @@
 	<title>{data.community.name} | Sanctyria Community</title>
 	<meta name="description" content={data.community.description} />
 	<link rel="canonical" href={`https://sanctyria.com/r/${data.community.slug}`} />
-	<meta name="robots" content="index, follow" />
+	<meta name="robots" content={data.community.indexable ? 'index, follow' : 'noindex, follow'} />
 	<meta property="og:type" content="website" />
 	<meta property="og:url" content={`https://sanctyria.com/r/${data.community.slug}`} />
 	<meta property="og:title" content={`${data.community.name} | Sanctyria Community`} />
@@ -348,24 +357,34 @@
 						</p>
 					</div>
 				</div>
-				{#if !isCommunityOwner}
+				<div class="flex items-center gap-2">
 					<button
 						type="button"
-						onclick={toggleJoin}
-						aria-pressed={joined}
-						class="min-w-[88px] border border-white/15 px-4 py-2 text-xs font-medium text-white transition-colors hover:border-orange-200/40 hover:text-orange-100"
-						>{joined ? 'Joined' : 'Join'}</button
-					>
-				{/if}
-				{#if isCommunityOwner}
-					<button
-						type="button"
-						onclick={openEditor}
-						aria-label="Edit community details"
+						onclick={shareCommunity}
+						aria-label="Share community"
+						title="Share community"
 						class="flex h-9 w-9 items-center justify-center border border-white/15 text-white/70 hover:border-orange-200/40 hover:text-orange-100"
-						><Pencil size={15} /></button
+						><Share2 size={15} /></button
 					>
-				{/if}
+					{#if !isCommunityOwner}
+						<button
+							type="button"
+							onclick={toggleJoin}
+							aria-pressed={joined}
+							class="min-w-[88px] border border-white/15 px-4 py-2 text-xs font-medium text-white transition-colors hover:border-orange-200/40 hover:text-orange-100"
+							>{joined ? 'Joined' : 'Join'}</button
+						>
+					{/if}
+					{#if isCommunityOwner}
+						<button
+							type="button"
+							onclick={openEditor}
+							aria-label="Edit community details"
+							class="flex h-9 w-9 items-center justify-center border border-white/15 text-white/70 hover:border-orange-200/40 hover:text-orange-100"
+							><Pencil size={15} /></button
+						>
+					{/if}
+				</div>
 			</div>
 			<p class="mt-4 max-w-2xl px-2 text-sm leading-6 text-white/65">
 				{data.community.description}
@@ -481,12 +500,11 @@
 										>
 									{/if}
 								{/if}
-								<div class="mt-3 flex items-center gap-4 text-[10px] text-white/40">
-									<span class="inline-flex items-center gap-1"><Flame size={13} />{post.votes}</span
-									><span class="inline-flex items-center gap-1"
-										><MessageCircle size={13} />{post.replyCount ?? post.replies.length} replies</span
-									>
-								</div>
+								<CommunityPostActions
+									{post}
+									viewerUsername={data.communityUser?.username}
+									returnTo={`/r/${encodeURIComponent(data.community.slug)}`}
+								/>
 							</div>
 						</div>
 					</article>
