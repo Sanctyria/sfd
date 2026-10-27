@@ -46,6 +46,7 @@ export interface ApiCommunity {
 	memberCount: number;
 	activeEmber?: number;
 	createdAt: string;
+	updatedAt?: string;
 }
 
 export interface ApiWeeklyEmberResponse {

@@ -1,8 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { getContext } from 'svelte';
-	import { ArrowUpRight } from '@lucide/svelte';
-	import { brandIconPaths } from '#lib/marketing/brandIcons.js';
+	import { ArrowRight, UsersRound } from '@lucide/svelte';
 
 	type SiteAudio = {
 		getMuted: () => boolean;
@@ -36,7 +35,7 @@
 	<title>Sanctyria | Dark Fantasy Universe &amp; Creative Sanctuary</title>
 	<meta
 		name="description"
-		content="Step inside Sanctyria, a dark fantasy universe and creative transmedia ecosystem. Gather around the Eternal Flame, explore magitech systems, and join our Discord."
+		content="Step inside Sanctyria, a dark fantasy universe and creative transmedia ecosystem. Gather around the Eternal Flame, explore magitech systems, and join the community."
 	/>
 	<meta
 		name="keywords"
@@ -49,7 +48,7 @@
 	<meta property="og:title" content="Sanctyria | Dark Fantasy Universe &amp; Creative Sanctuary" />
 	<meta
 		property="og:description"
-		content="Step inside Sanctyria, a dark fantasy universe and creative transmedia ecosystem. Gather around the Eternal Flame, explore magitech systems, and join our Discord."
+		content="Step inside Sanctyria, a dark fantasy universe and creative transmedia ecosystem. Gather around the Eternal Flame, explore magitech systems, and join the community."
 	/>
 	<meta property="og:image" content="https://sanctyria.com/sitepreview.png" />
 	<meta property="og:image:width" content="1200" />
@@ -59,7 +58,7 @@
 	<meta name="twitter:title" content="Sanctyria | Dark Fantasy Universe &amp; Creative Sanctuary" />
 	<meta
 		name="twitter:description"
-		content="Step inside Sanctyria, a dark fantasy universe and creative transmedia ecosystem. Gather around the Eternal Flame, explore magitech systems, and join our Discord."
+		content="Step inside Sanctyria, a dark fantasy universe and creative transmedia ecosystem. Gather around the Eternal Flame, explore magitech systems, and join the community."
 	/>
 	<meta name="twitter:image" content="https://sanctyria.com/sitepreview.png" />
 </svelte:head>
@@ -100,19 +99,15 @@
 			<h1
 				class="animate-fade-rise max-w-7xl font-display text-5xl leading-[0.95] text-brand-black select-none sm:text-7xl md:text-8xl"
 			>
-				Beyond <span class="font-normal text-white italic">silence,</span> we build
-				<span
-					class="animate-ember-glow font-normal text-orange-500 italic"
-					style="text-shadow: 0 0 40px rgba(249,115,22,0.55), 0 0 80px rgba(251,146,60,0.25)"
-					>the eternal.</span
-				>
+				A dark fantasy <span class="font-normal text-white italic">world</span> where creation shapes
+				reality.
 			</h1>
 			<p
 				class="animate-fade-rise-delay mt-8 max-w-2xl font-body text-base leading-relaxed text-white sm:text-lg"
 				style="text-shadow: 0 1px 3px rgba(0,0,0,0.85)"
 			>
-				Building platforms for brilliant minds, fearless makers, and thoughtful souls. Through the
-				noise, we craft digital havens for deep work and pure flows.
+				Explore eight nations, ancient power, and a living mythology around the Eternal Flame & then
+				join a community of creators and storytellers bringing it to life.
 			</p>
 			<div
 				class="animate-fade-rise-delay-2 mt-12 flex w-full flex-col items-center gap-3 sm:w-auto sm:flex-row sm:gap-4"
@@ -123,25 +118,16 @@
 					>Begin Journey</a
 				>
 				<a
-					href="https://discord.gg/sanctyria"
-					target="_blank"
-					rel="noopener noreferrer"
-					aria-label="Join our Discord – Access Realm"
+					href="/home"
+					aria-label="Explore the Sanctyria community"
 					class="group relative flex w-full items-center justify-center gap-3 overflow-hidden rounded-full border border-brand-black/15 bg-white/60 px-10 py-5 text-base font-medium text-brand-black shadow-sm backdrop-blur-sm transition-all duration-300 hover:border-brand-black hover:bg-brand-black hover:text-white hover:shadow-md active:scale-[0.98] sm:w-auto sm:px-12"
 				>
 					<span
 						class="pointer-events-none absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/10 to-transparent transition-transform duration-600 group-hover:translate-x-full"
 					></span>
-					<svg
-						viewBox="0 0 24 24"
-						fill="currentColor"
-						aria-hidden="true"
-						class="relative h-5 w-5 shrink-0 text-[#5865F2] transition-colors duration-300 group-hover:text-white"
-					>
-						{#each brandIconPaths.discord as path (path)}<path d={path} />{/each}
-					</svg>
-					<span class="relative">Access Realm</span>
-					<ArrowUpRight
+					<UsersRound class="relative h-5 w-5 shrink-0 transition-colors duration-300" />
+					<span class="relative">Explore the Community</span>
+					<ArrowRight
 						class="relative h-3.5 w-3.5 shrink-0 opacity-50 transition-all group-hover:translate-x-0.5 group-hover:opacity-100"
 					/>
 				</a>

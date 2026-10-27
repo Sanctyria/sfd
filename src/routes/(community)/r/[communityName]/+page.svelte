@@ -299,7 +299,7 @@
 	<meta property="og:description" content={data.community.description} />
 	<meta
 		property="og:image"
-		content={`https://sanctyria.com/api/og/community/${encodeURIComponent(data.community.slug)}`}
+		content={`https://sanctyria.com/api/og/community/${encodeURIComponent(data.community.slug)}?v=${encodeURIComponent(data.community.updatedAt ?? '')}`}
 	/>
 	<meta property="og:image:width" content="1200" />
 	<meta property="og:image:height" content="630" />
@@ -308,7 +308,7 @@
 	<meta name="twitter:description" content={data.community.description} />
 	<meta
 		name="twitter:image"
-		content={`https://sanctyria.com/api/og/community/${encodeURIComponent(data.community.slug)}`}
+		content={`https://sanctyria.com/api/og/community/${encodeURIComponent(data.community.slug)}?v=${encodeURIComponent(data.community.updatedAt ?? '')}`}
 	/>
 </svelte:head>
 

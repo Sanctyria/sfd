@@ -84,6 +84,7 @@ static/
 - The proxy caps forwarded request bodies at 1 MiB and ordinary upstream requests at 15 seconds. The `/api/community/events` SSE request is exempt from the proxy timeout; backend streams are capped at 15 minutes.
 - Keep SvelteKit routes and helpers platform-neutral when possible. If moving away from Netlify, replace `adapter-netlify` with the target platform's adapter and validate a deployment build there.
 - The social image routes run on the server and require the Node-compatible `sharp` package and the files under `static/assets/`.
+- Branded social-preview text is rendered with Noto Sans and Noto Serif from `static/assets/fonts/` to avoid dependence on fonts installed by the hosting platform. `netlify.toml` includes those fonts and the renderer's image assets in the server function package. The included SIL Open Font License files document redistribution terms.
 - Configure the production site's canonical origin consistently with the `https://sanctyria.com` social metadata URLs.
 - Keep secrets in the hosting platform's secret manager; do not commit `.env` files, API keys, or credentials.
 

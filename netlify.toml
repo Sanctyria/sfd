@@ -4,3 +4,10 @@ publish = "build"
 
 [build.environment]
 NODE_VERSION = "22"
+
+[functions]
+included_files = [
+  "static/assets/characters/*.png",
+  "static/assets/dlst.gif",
+  "static/assets/fonts/*.ttf",
+]

@@ -50,6 +50,9 @@
 	const additionalCommunityCount = $derived(
 		Math.max(0, data.profile.communities.length - visibleCommunities.length)
 	);
+	const profileOgImage = $derived(
+		`https://sanctyria.com/api/og/profile/${encodeURIComponent(data.profile.username)}?v=${encodeURIComponent(data.profile.avatarVersion ?? '')}`
+	);
 
 	const sections = ['Posts', 'Replies', 'Media'];
 
@@ -231,19 +234,13 @@
 	/>
 	<meta property="og:title" content={`${data.profile.name} | Sanctyria Community`} />
 	<meta property="og:description" content={data.profile.bio} />
-	<meta
-		property="og:image"
-		content={`https://sanctyria.com/api/og/profile/${encodeURIComponent(data.profile.username)}`}
-	/>
+	<meta property="og:image" content={profileOgImage} />
 	<meta property="og:image:width" content="1200" />
 	<meta property="og:image:height" content="630" />
 	<meta name="twitter:card" content="summary_large_image" />
 	<meta name="twitter:title" content={`${data.profile.name} | Sanctyria Community`} />
 	<meta name="twitter:description" content={data.profile.bio} />
-	<meta
-		name="twitter:image"
-		content={`https://sanctyria.com/api/og/profile/${encodeURIComponent(data.profile.username)}`}
-	/>
+	<meta name="twitter:image" content={profileOgImage} />
 </svelte:head>
 
 <div class="community-profile-page min-h-screen bg-[#090a0a] text-[#f1efe9]">

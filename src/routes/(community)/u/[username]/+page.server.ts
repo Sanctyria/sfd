@@ -35,6 +35,7 @@ export const load: PageServerLoad = async ({ fetch, params, depends, parent }) =
 				name: profile.displayName,
 				handle: `@${profile.username}`,
 				initials: profile.initials ?? profile.displayName.slice(0, 1).toUpperCase(),
+				avatarVersion: profile.avatarVersion,
 				avatarColor: profile.avatarColor ?? '#cf6f65',
 				avatarUrl: profile.avatarUrl,
 				bio: profile.bio,

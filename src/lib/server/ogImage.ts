@@ -1,13 +1,19 @@
+import { createHash } from 'node:crypto';
 import { lookup } from 'node:dns/promises';
 import https from 'node:https';
 import { readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
+import { Resvg } from '@resvg/resvg-js';
 import sharp, { type OverlayOptions } from 'sharp';
 
 const width = 1200;
 const height = 630;
 const assetsPath = resolve(process.cwd(), 'static', 'assets');
 const characters = ['ember.png', 'kai.png', 'lib.png', 'saphy.png'];
+const ogFonts = [
+	resolve(assetsPath, 'fonts', 'NotoSans-Variable.ttf'),
+	resolve(assetsPath, 'fonts', 'NotoSerif-Variable.ttf')
+];
 const imageCache = new Map<string, { image: Buffer; expiresAt: number }>();
 
 export interface BrandedOgImageOptions {
@@ -17,6 +23,7 @@ export interface BrandedOgImageOptions {
 	imageUrl?: string | null;
 	initials?: string;
 	character?: number;
+	cacheVersion?: string;
 }
 
 function escapeXml(value: string): string {
@@ -59,20 +66,20 @@ function makeTemplate(options: BrandedOgImageOptions): string {
 	const title = titleLines
 		.map(
 			(line, index) =>
-				`<text x="76" y="${445 + index * 48}" class="title">${escapeXml(line)}</text>`
+				`<text x="76" y="${445 + index * 48}" font-family="Noto Serif" font-size="42px" font-weight="600" fill="#fffaf5">${escapeXml(line)}</text>`
 		)
 		.join('');
 	const descriptionStart = 510 + Math.max(0, titleLines.length - 1) * 48;
 	const description = descriptionLines
 		.map(
 			(line, index) =>
-				`<text x="80" y="${descriptionStart + index * 25}" class="description">${escapeXml(line)}</text>`
+				`<text x="80" y="${descriptionStart + index * 25}" font-family="Noto Sans" font-size="18px" fill="#e3d6cb">${escapeXml(line)}</text>`
 		)
 		.join('');
 	const initials = escapeXml((options.initials || 'S').slice(0, 3));
 	const profileImage =
 		options.initials !== undefined
-			? `<rect x="825" y="170" width="290" height="290" rx="20" fill="#211915" stroke="#e9a363" stroke-opacity=".45" stroke-width="2"/><text x="970" y="338" text-anchor="middle" class="initials">${initials}</text>`
+			? `<rect x="825" y="170" width="290" height="290" rx="20" fill="#211915" stroke="#e9a363" stroke-opacity=".45" stroke-width="2"/><text x="970" y="338" text-anchor="middle" font-family="Noto Serif" font-size="92px" font-weight="600" fill="#fff1e2">${initials}</text>`
 			: '';
 
 	return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
@@ -86,12 +93,6 @@ function makeTemplate(options: BrandedOgImageOptions): string {
 			<linearGradient id="shade" x1="0" y1="1" x2="0" y2="0">
 				<stop stop-color="#09090b" stop-opacity=".76"/><stop offset=".55" stop-color="#09090b" stop-opacity=".08"/>
 			</linearGradient>
-			<style>
-				.eyebrow { font: 600 13px Arial, sans-serif; fill: #efb886; letter-spacing: 4px; }
-				.title { font: 600 42px Georgia, serif; fill: #fffaf5; }
-				.description { font: 18px Arial, sans-serif; fill: #e3d6cb; }
-				.initials { font: 600 92px Georgia, serif; fill: #fff1e2; }
-			</style>
 		</defs>
 		<rect width="1200" height="630" fill="url(#background)"/>
 		<ellipse cx="970" cy="290" rx="360" ry="310" fill="url(#glow)"/>
@@ -100,10 +101,10 @@ function makeTemplate(options: BrandedOgImageOptions): string {
 		<path d="M60 155H1140" stroke="#f4cba8" stroke-opacity=".13"/>
 		<rect x="28" y="28" width="1144" height="574" rx="16" fill="none" stroke="#fff4e8" stroke-opacity=".12"/>
 		${profileImage}
-		<text x="80" y="135" class="eyebrow">${eyebrow}</text>
+		<text x="80" y="135" font-family="Noto Sans" font-size="13px" font-weight="600" letter-spacing="4" fill="#efb886">${eyebrow}</text>
 		${title}
 		${description}
-		<text x="80" y="594" class="eyebrow" opacity=".65">A WORLD OF STORIES &amp; WONDER</text>
+		<text x="80" y="594" font-family="Noto Sans" font-size="13px" font-weight="600" letter-spacing="4" fill="#efb886" opacity=".65">A WORLD OF STORIES &amp; WONDER</text>
 	</svg>`;
 }
 
@@ -132,7 +133,7 @@ function isPublicIpv4(address: string): boolean {
 	);
 }
 
-async function loadRemoteImage(imageUrl: string): Promise<Buffer | null> {
+async function loadRemoteImage(imageUrl: string, redirectsRemaining = 3): Promise<Buffer | null> {
 	let url: URL;
 	try {
 		url = new URL(imageUrl);
@@ -155,13 +156,9 @@ async function loadRemoteImage(imageUrl: string): Promise<Buffer | null> {
 		address = url.hostname;
 	} else {
 		if (url.hostname.includes(':')) return null;
-		try {
-			const addresses = await lookup(url.hostname, { family: 4, all: true, verbatim: true });
-			if (!addresses.length || addresses.some(({ address: ip }) => !isPublicIpv4(ip))) return null;
-			address = addresses[0]?.address ?? '';
-		} catch {
-			return null;
-		}
+		const addresses = await lookup(url.hostname, { family: 4, all: true, verbatim: true });
+		if (!addresses.length || addresses.some(({ address: ip }) => !isPublicIpv4(ip))) return null;
+		address = addresses[0]?.address ?? '';
 		if (!address) return null;
 	}
 
@@ -177,6 +174,22 @@ async function loadRemoteImage(imageUrl: string): Promise<Buffer | null> {
 				headers: { accept: 'image/png,image/jpeg,image/webp,image/gif' }
 			},
 			(response) => {
+				if ([301, 302, 303, 307, 308].includes(response.statusCode ?? 0)) {
+					const location = response.headers.location;
+					response.resume();
+					if (!location || redirectsRemaining === 0) {
+						resolveImage(null);
+						return;
+					}
+					try {
+						resolveImage(
+							loadRemoteImage(new URL(location, url).toString(), redirectsRemaining - 1)
+						);
+					} catch {
+						resolveImage(null);
+					}
+					return;
+				}
 				if (
 					response.statusCode !== 200 ||
 					!/^image\/(?:png|jpeg|webp|gif)\b/i.test(response.headers['content-type'] ?? '')
@@ -202,11 +215,33 @@ async function loadRemoteImage(imageUrl: string): Promise<Buffer | null> {
 		request.setTimeout(4000, () => request.destroy(new Error('Avatar request timed out.')));
 		request.on('error', reject);
 		request.end();
-	}).catch(() => null);
+	});
+}
+
+async function loadAvatarImage(imageUrl: string): Promise<Buffer | null> {
+	if (!imageUrl.startsWith('data:')) return loadRemoteImage(imageUrl);
+
+	const match = /^data:image\/(?:png|jpeg|webp|gif);base64,([A-Za-z0-9+/]+={0,2})$/.exec(imageUrl);
+	const encoded = match?.[1];
+	if (!encoded || encoded.length % 4 !== 0 || encoded.length > 1_400_000) return null;
+
+	const image = Buffer.from(encoded, 'base64');
+	if (image.length > 1_000_000 || image.toString('base64') !== encoded) return null;
+	return image;
 }
 
 async function createBrandedOgImage(options: BrandedOgImageOptions): Promise<Buffer> {
-	const background = Buffer.from(makeTemplate(options));
+	const background = new Resvg(makeTemplate(options), {
+		font: {
+			fontFiles: ogFonts,
+			loadSystemFonts: false,
+			defaultFontFamily: 'Noto Sans',
+			sansSerifFamily: 'Noto Sans',
+			serifFamily: 'Noto Serif'
+		}
+	})
+		.render()
+		.asPng();
 	const logo = await sharp(await readFile(resolve(assetsPath, 'dlst.gif')), { page: 0, pages: 1 })
 		.resize(86, 86, { fit: 'contain' })
 		.png()
@@ -220,7 +255,13 @@ async function createBrandedOgImage(options: BrandedOgImageOptions): Promise<Buf
 	];
 
 	if (options.imageUrl) {
-		const remoteImage = await loadRemoteImage(options.imageUrl);
+		let remoteImage: Buffer | null = null;
+		let avatarLoadError: unknown;
+		try {
+			remoteImage = await loadAvatarImage(options.imageUrl);
+		} catch (cause) {
+			avatarLoadError = cause;
+		}
 		if (remoteImage) {
 			try {
 				const avatar = await sharp(remoteImage, { limitInputPixels: 16_000_000 })
@@ -241,6 +282,11 @@ async function createBrandedOgImage(options: BrandedOgImageOptions): Promise<Buf
 					cause
 				);
 			}
+		} else {
+			console.warn(
+				'Avatar is unavailable for the social preview; using initials.',
+				avatarLoadError
+			);
 		}
 	} else if (options.initials !== undefined) {
 		return sharp(background).composite(layers).png().toBuffer();
@@ -266,7 +312,7 @@ async function createBrandedOgImage(options: BrandedOgImageOptions): Promise<Buf
 }
 
 export async function renderBrandedOgImage(options: BrandedOgImageOptions): Promise<Buffer> {
-	const key = JSON.stringify(options);
+	const key = createHash('sha256').update(JSON.stringify(options)).digest('hex');
 	const cached = imageCache.get(key);
 	if (cached && cached.expiresAt > Date.now()) {
 		imageCache.delete(key);
