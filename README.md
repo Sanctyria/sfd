@@ -58,6 +58,10 @@ Journal article pages use each article's own image. Shared image posts use the p
 
 Social platforms cache previews. After updating metadata or imagery, use the platform's link-preview debugger or wait for its cache to refresh.
 
+## IndexNow verification
+
+The root-level `<key>.txt` file verifies this site for IndexNow. Keep it synchronized with `INDEXNOW_KEY` in the production backend environment; the value is intentionally public. The backend sends notifications for eligible content changes, and its one-time sitemap submission command is documented in `../Backend/README.md`.
+
 ## Source layout
 
 ```text
