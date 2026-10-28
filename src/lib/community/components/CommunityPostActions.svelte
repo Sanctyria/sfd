@@ -1,8 +1,10 @@
 <script lang="ts">
 	import { goto, invalidate } from '$app/navigation';
-	import { Flame, MessageCircle, PenLine, Skull } from '@lucide/svelte';
+	import { Flame, MessageCircle, Skull } from '@lucide/svelte';
 	import type { CommunityPost, CommunityReply } from '../community.js';
 	import { communityApi, toCommunityReply, type ApiPage, type ApiReply } from '../communityApi.js';
+	import CommunityReportButton from './CommunityReportButton.svelte';
+	import CommunityReplyBadges from './CommunityReplyBadges.svelte';
 
 	interface Props {
 		post: CommunityPost;
@@ -136,6 +138,14 @@
 			<MessageCircle size={13} />{replyCount}
 			{replyCount === 1 ? 'reply' : 'replies'}
 		</button>
+		<CommunityReportButton
+			targetType="post"
+			targetId={post.id}
+			targetLabel="post"
+			{viewerUsername}
+			{returnTo}
+			ownContent={viewerUsername === post.handle.slice(1)}
+		/>
 	</div>
 	{#if repliesOpen}
 		<div class="mt-2 space-y-3 border-l border-white/10 pl-3">
@@ -148,14 +158,7 @@
 							href={`/u/${encodeURIComponent(reply.handle.slice(1))}`}
 							class="mr-1 font-medium text-white/85 hover:text-orange-100">{reply.name}</a
 						>
-						{#if reply.isPostAuthor}<span
-								class="mr-1 inline-flex items-center gap-0.5 text-[9px] text-sky-200/75"
-								title="Author of this post"><PenLine size={10} />Author</span
-							>{/if}
-						{#if reply.isCommunityOwner}<span
-								class="mr-1 text-[9px] text-orange-200/75"
-								title="Community owner">Owner</span
-							>{/if}
+						<CommunityReplyBadges {reply} />
 						{reply.text}
 					</p>
 				{/each}

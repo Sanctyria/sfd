@@ -114,6 +114,7 @@ export interface ApiReply {
 	reacted?: boolean;
 	isPostAuthor?: boolean;
 	isCommunityOwner?: boolean;
+	isCommunityModerator?: boolean;
 	author: ApiAuthor;
 }
 
@@ -248,6 +249,7 @@ export function toCommunityReply(reply: ApiReply): CommunityReply {
 		verified: reply.author.verified,
 		isPostAuthor: reply.isPostAuthor ?? false,
 		isCommunityOwner: reply.isCommunityOwner ?? false,
+		isCommunityModerator: reply.isCommunityModerator ?? false,
 		text: reply.body,
 		reactionCount: reply.reactionCount ?? 0,
 		reacted: reply.reacted ?? false

@@ -11,7 +11,6 @@
 		ChevronLeft,
 		ChevronRight,
 		CornerDownRight,
-		Crown,
 		Flame,
 		Grid2X2,
 		Image,
@@ -19,7 +18,6 @@
 		List,
 		MessageCircle,
 		MoreHorizontal,
-		PenLine,
 		Pencil,
 		Plus,
 		Search,
@@ -50,6 +48,7 @@
 	import CommunityBottomNav from '#lib/community/components/CommunityBottomNav.svelte';
 	import CommunityFollowButton from '#lib/community/components/CommunityFollowButton.svelte';
 	import CommunityLinkPreview from '#lib/community/components/CommunityLinkPreview.svelte';
+	import CommunityReplyBadges from '#lib/community/components/CommunityReplyBadges.svelte';
 	import { subscribeCommunityRealtime } from '#lib/community/communityRealtime.js';
 	import type { PageProps } from './$types';
 
@@ -843,11 +842,22 @@
 					<div class="mb-4 flex items-start justify-between gap-3">
 						<div class="flex items-center gap-2.5">
 							<span
-								class="flex h-8 w-8 items-center justify-center rounded-full bg-[#cf6f65] font-display text-sm"
-								>G</span
+								class="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full border border-orange-200/25 font-display text-sm text-white"
+								style={data.communityUser.avatarUrl
+									? undefined
+									: `background:${data.communityUser.avatarColor ?? '#cf6f65'}`}
+							>
+								{#if data.communityUser.avatarUrl}<img
+										src={data.communityUser.avatarUrl}
+										alt=""
+										class="h-full w-full object-cover"
+									/>{:else}{data.communityUser.initials ??
+										data.communityUser.displayName.slice(0, 2).toUpperCase()}{/if}
+							</span>
 							>
 							<div>
-								<p class="text-xs font-medium">Sanctyria Guest</p>
+								<p class="text-xs font-medium">{data.communityUser.displayName}</p>
+								<p class="mt-0.5 text-[10px] text-white/35">@{data.communityUser.username}</p>
 								<label class="mt-0.5 flex items-center gap-1 text-[10px] text-white/35">
 									<span>Posting to</span>
 									<select
@@ -1392,15 +1402,7 @@
 																			href={`/u/${encodeURIComponent(reply.handle.slice(1))}`}
 																			class="mr-1 font-medium text-white/85 hover:text-orange-100"
 																			>{reply.name}</a
-																		>{#if reply.isPostAuthor}<span
-																				class="mr-1 inline-flex items-center gap-0.5 text-[9px] text-sky-200/75"
-																				title="Author of this post"
-																				><PenLine size={10} />Author</span
-																			>{/if}
-																		{#if reply.isCommunityOwner}<span
-																				class="mr-1 inline-flex items-center gap-0.5 text-[9px] text-orange-200/75"
-																				title="Community owner"><Crown size={10} />Owner</span
-																			>{/if}
+																		><CommunityReplyBadges {reply} />
 																		{#if reply.verified}<BadgeCheck
 																				size={12}
 																				class="mr-1 inline text-sky-300"

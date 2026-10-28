@@ -59,7 +59,7 @@ function wrapText(value: string, maxLength: number, maxLines: number): string[] 
 	return lines;
 }
 
-function makeTemplate(options: BrandedOgImageOptions): string {
+function makeTemplate(options: BrandedOgImageOptions, showInitials = !options.imageUrl): string {
 	const titleLines = wrapText(options.title || 'Discover Sanctyria', 24, 2);
 	const descriptionLines = wrapText(options.description || 'A world of stories and wonder.', 58, 2);
 	const eyebrow = escapeXml(options.eyebrow || 'SANCTYRIA');
@@ -78,7 +78,7 @@ function makeTemplate(options: BrandedOgImageOptions): string {
 		.join('');
 	const initials = escapeXml((options.initials || 'S').slice(0, 3));
 	const profileImage =
-		options.initials !== undefined
+		options.initials !== undefined && showInitials
 			? `<rect x="825" y="170" width="290" height="290" rx="20" fill="#211915" stroke="#e9a363" stroke-opacity=".45" stroke-width="2"/><text x="970" y="338" text-anchor="middle" font-family="Noto Serif" font-size="92px" font-weight="600" fill="#fff1e2">${initials}</text>`
 			: '';
 
@@ -231,7 +231,7 @@ async function loadAvatarImage(imageUrl: string): Promise<Buffer | null> {
 }
 
 async function createBrandedOgImage(options: BrandedOgImageOptions): Promise<Buffer> {
-	const background = new Resvg(makeTemplate(options), {
+	const background = new Resvg(makeTemplate(options, !options.imageUrl), {
 		font: {
 			fontFiles: ogFonts,
 			loadSystemFonts: false,
@@ -257,6 +257,7 @@ async function createBrandedOgImage(options: BrandedOgImageOptions): Promise<Buf
 	if (options.imageUrl) {
 		let remoteImage: Buffer | null = null;
 		let avatarLoadError: unknown;
+		let avatarRendered = false;
 		try {
 			remoteImage = await loadAvatarImage(options.imageUrl);
 		} catch (cause) {
@@ -276,6 +277,7 @@ async function createBrandedOgImage(options: BrandedOgImageOptions): Promise<Buf
 					.png()
 					.toBuffer();
 				layers.push({ input: framedAvatar, left: 825, top: 170 });
+				avatarRendered = true;
 			} catch (cause) {
 				console.warn(
 					'Could not decode profile avatar for the social preview; using initials.',
@@ -287,6 +289,13 @@ async function createBrandedOgImage(options: BrandedOgImageOptions): Promise<Buf
 				'Avatar is unavailable for the social preview; using initials.',
 				avatarLoadError
 			);
+		}
+		if (!avatarRendered && options.initials !== undefined) {
+			const initials = escapeXml(options.initials.slice(0, 3));
+			const fallback = Buffer.from(
+				`<svg xmlns="http://www.w3.org/2000/svg" width="290" height="290"><rect width="290" height="290" rx="20" fill="#211915" stroke="#e9a363" stroke-opacity=".45" stroke-width="2"/><text x="145" y="168" text-anchor="middle" font-family="Noto Serif" font-size="92px" font-weight="600" fill="#fff1e2">${initials}</text></svg>`
+			);
+			layers.push({ input: fallback, left: 825, top: 170 });
 		}
 	} else if (options.initials !== undefined) {
 		return sharp(background).composite(layers).png().toBuffer();

@@ -270,7 +270,7 @@
 	<main class="mx-auto w-full max-w-5xl px-2 pb-28 sm:px-8 md:pb-12 xl:px-12">
 		<section class="mt-5 border-b border-white/[0.08] pb-6" aria-labelledby="profile-name">
 			<div
-				class="relative h-24 overflow-hidden border border-white/[0.06] bg-[linear-gradient(115deg,rgba(249,115,22,.16),rgba(9,10,10,.1)_55%,rgba(132,165,189,.12))] sm:h-32"
+				class="relative z-0 h-24 overflow-hidden border border-white/[0.06] bg-[linear-gradient(115deg,rgba(249,115,22,.16),rgba(9,10,10,.1)_55%,rgba(132,165,189,.12))] sm:h-32"
 			>
 				{#if data.profile.bannerUrl}
 					<img
@@ -282,7 +282,7 @@
 				{/if}
 			</div>
 			<div class="flex flex-wrap items-end justify-between gap-4 px-2">
-				<div class="-mt-7 flex items-end gap-3 sm:-mt-9 sm:gap-4">
+				<div class="relative z-10 -mt-7 flex items-end gap-3 sm:-mt-9 sm:gap-4">
 					<span
 						class="flex h-16 w-16 items-center justify-center overflow-hidden rounded-full border-4 border-[#090a0a] font-display text-2xl text-white sm:h-20 sm:w-20"
 						style={data.profile.avatarUrl ? undefined : `background:${data.profile.avatarColor}`}

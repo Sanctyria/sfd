@@ -9,7 +9,7 @@ interface PageResponse<T> {
 
 interface Report {
 	id: string;
-	targetType: string;
+	targetType: 'post' | 'reply' | 'community' | string;
 	targetId: string;
 	reason: string;
 	status: 'open' | 'reviewing' | 'resolved' | 'dismissed';

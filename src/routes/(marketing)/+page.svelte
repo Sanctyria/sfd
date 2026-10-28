@@ -97,13 +97,13 @@
 			style="padding-top: calc(8rem - 75px); padding-bottom: 10rem"
 		>
 			<h1
-				class="animate-fade-rise max-w-7xl font-display text-5xl leading-[0.95] text-brand-black select-none sm:text-7xl md:text-8xl"
+				class="animate-fade-rise max-w-7xl font-display text-3xl leading-[1.05] text-brand-black select-none sm:text-7xl sm:leading-[0.95] md:text-8xl"
 			>
 				A dark fantasy <span class="font-normal text-white italic">world</span> where creation shapes
 				reality.
 			</h1>
 			<p
-				class="animate-fade-rise-delay mt-8 max-w-2xl font-body text-base leading-relaxed text-white sm:text-lg"
+				class="animate-fade-rise-delay mt-5 max-w-2xl font-body text-sm leading-relaxed text-white sm:mt-8 sm:text-lg"
 				style="text-shadow: 0 1px 3px rgba(0,0,0,0.85)"
 			>
 				Explore eight nations, ancient power, and a living mythology around the Eternal Flame & then
@@ -114,13 +114,13 @@
 			>
 				<a
 					href="/about"
-					class={`w-full rounded-full bg-brand-black px-10 py-5 text-base font-medium text-white shadow-md transition-all duration-300 hover:scale-[1.03] hover:shadow-lg active:scale-[0.98] sm:w-auto sm:px-14 ${videoEnded ? 'shadow-[0_0_25px_rgba(0,0,0,0.6)] ring-2 ring-brand-black/80 ring-offset-2' : ''}`}
+					class={`w-full max-w-[280px] rounded-full bg-brand-black px-5 py-4 text-sm font-medium text-white shadow-md transition-all duration-300 hover:scale-[1.03] hover:shadow-lg active:scale-[0.98] sm:w-auto sm:max-w-none sm:px-14 sm:py-5 sm:text-base ${videoEnded ? 'shadow-[0_0_25px_rgba(0,0,0,0.6)] ring-2 ring-brand-black/80 ring-offset-2' : ''}`}
 					>Begin Journey</a
 				>
 				<a
 					href="/home"
 					aria-label="Explore the Sanctyria community"
-					class="group relative flex w-full items-center justify-center gap-3 overflow-hidden rounded-full border border-brand-black/15 bg-white/60 px-10 py-5 text-base font-medium text-brand-black shadow-sm backdrop-blur-sm transition-all duration-300 hover:border-brand-black hover:bg-brand-black hover:text-white hover:shadow-md active:scale-[0.98] sm:w-auto sm:px-12"
+					class="group relative flex w-full max-w-[280px] items-center justify-center gap-2 overflow-hidden rounded-full border border-brand-black/15 bg-white/60 px-4 py-4 text-sm font-medium text-brand-black shadow-sm backdrop-blur-sm transition-all duration-300 hover:border-brand-black hover:bg-brand-black hover:text-white hover:shadow-md active:scale-[0.98] sm:w-auto sm:max-w-none sm:gap-3 sm:px-12 sm:py-5 sm:text-base"
 				>
 					<span
 						class="pointer-events-none absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/10 to-transparent transition-transform duration-600 group-hover:translate-x-full"

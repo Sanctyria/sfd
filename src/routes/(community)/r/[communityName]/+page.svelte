@@ -12,6 +12,7 @@
 	import CommunityFollowButton from '#lib/community/components/CommunityFollowButton.svelte';
 	import CommunityLinkPreview from '#lib/community/components/CommunityLinkPreview.svelte';
 	import CommunityPostActions from '#lib/community/components/CommunityPostActions.svelte';
+	import CommunityReportButton from '#lib/community/components/CommunityReportButton.svelte';
 	import { subscribeCommunityRealtime } from '#lib/community/communityRealtime.js';
 	import type { PageProps } from './$types';
 
@@ -366,6 +367,13 @@
 						class="flex h-9 w-9 items-center justify-center border border-white/15 text-white/70 hover:border-orange-200/40 hover:text-orange-100"
 						><Share2 size={15} /></button
 					>
+					<CommunityReportButton
+						targetType="community"
+						targetId={data.community.id}
+						targetLabel="community"
+						viewerUsername={data.communityUser?.username}
+						returnTo={`/r/${encodeURIComponent(data.community.slug)}`}
+					/>
 					{#if !isCommunityOwner}
 						<button
 							type="button"

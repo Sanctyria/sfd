@@ -56,7 +56,8 @@
 			);
 		} catch (cause) {
 			console.error('Could not save privacy preferences.', cause);
-			saveError = 'Your choice could not be saved. Check your browser storage settings and try again.';
+			saveError =
+				'Your choice could not be saved. Check your browser storage settings and try again.';
 			return;
 		}
 
@@ -101,8 +102,6 @@
 			<button class="privacy-button primary" onclick={() => saveConsent(true)}>Accept all</button>
 		</div>
 	</aside>
-{:else}
-	<button class="privacy-settings" onclick={() => (visible = true)}>Privacy settings</button>
 {/if}
 
 <style>
@@ -169,8 +168,7 @@
 		gap: 8px;
 	}
 
-	.privacy-button,
-	.privacy-settings {
+	.privacy-button {
 		border: 1px solid rgb(243 238 233 / 28%);
 		padding: 9px 12px;
 		color: inherit;
@@ -184,22 +182,12 @@
 		color: #171310;
 	}
 
-	.privacy-button.secondary,
-	.privacy-settings {
+	.privacy-button.secondary {
 		background: #171815;
 	}
 
-	.privacy-button:hover,
-	.privacy-settings:hover {
+	.privacy-button:hover {
 		border-color: #e7b394;
-	}
-
-	.privacy-settings {
-		position: fixed;
-		z-index: 999;
-		right: max(12px, env(safe-area-inset-right));
-		bottom: max(12px, env(safe-area-inset-bottom));
-		color: rgb(243 238 233 / 72%);
 	}
 
 	@media (max-width: 680px) {

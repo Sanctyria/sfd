@@ -5,12 +5,10 @@
 		BadgeCheck,
 		Bookmark,
 		CornerDownRight,
-		Crown,
 		Flame,
 		Globe,
 		MessageCircle,
 		MoreHorizontal,
-		PenLine,
 		Pencil,
 		Skull,
 		Share2,
@@ -34,6 +32,8 @@
 	import CommunityBottomNav from '#lib/community/components/CommunityBottomNav.svelte';
 	import CommunityFollowButton from '#lib/community/components/CommunityFollowButton.svelte';
 	import CommunityLinkPreview from '#lib/community/components/CommunityLinkPreview.svelte';
+	import CommunityReplyBadges from '#lib/community/components/CommunityReplyBadges.svelte';
+	import CommunityReportButton from '#lib/community/components/CommunityReportButton.svelte';
 	import { subscribeCommunityRealtime } from '#lib/community/communityRealtime.js';
 	import type { PageProps } from './$types';
 
@@ -391,6 +391,14 @@
 							viewerUsername={data.communityUser?.username}
 							initialFollowing={data.post.isFollowingAuthor}
 						/>
+						<CommunityReportButton
+							targetType="post"
+							targetId={data.post.id}
+							targetLabel="post"
+							viewerUsername={data.communityUser?.username}
+							returnTo={`/p/${encodeURIComponent(data.post.id)}`}
+							ownContent={data.communityUser?.username === data.post.handle.slice(1)}
+						/>
 					</div>
 					<a
 						href={`/r/${communitySlug(data.post.community)}`}
@@ -560,14 +568,7 @@
 															href={`/u/${encodeURIComponent(reply.handle.slice(1))}`}
 															class="mr-1 font-medium text-white/85 hover:text-orange-100"
 															>{reply.name}</a
-														>{#if reply.isPostAuthor}<span
-																class="mr-1 inline-flex items-center gap-0.5 text-[9px] text-sky-200/75"
-																title="Author of this post"><PenLine size={10} />Author</span
-															>{/if}
-														{#if reply.isCommunityOwner}<span
-																class="mr-1 inline-flex items-center gap-0.5 text-[9px] text-orange-200/75"
-																title="Community owner"><Crown size={10} />Owner</span
-															>{/if}
+														><CommunityReplyBadges {reply} />
 														{#if reply.verified}<BadgeCheck
 																size={12}
 																class="mr-1 inline text-sky-300"

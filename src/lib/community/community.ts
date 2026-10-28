@@ -13,6 +13,7 @@ export interface CommunityReply {
 	verified?: boolean;
 	isPostAuthor?: boolean;
 	isCommunityOwner?: boolean;
+	isCommunityModerator?: boolean;
 	text: string;
 	reactionCount?: number;
 	reacted?: boolean;

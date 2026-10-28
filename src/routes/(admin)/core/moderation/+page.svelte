@@ -22,6 +22,7 @@
 		}
 		if (
 			removeContent &&
+			report.targetType !== 'community' &&
 			!window.confirm(
 				'Remove this reported post or reply from public view? This action is audited.'
 			)
@@ -88,9 +89,11 @@
 						<span class={`core-pill ${report.status}`}>{report.status}</span>
 						<time>{new Date(report.createdAt).toLocaleString()}</time>
 					</div>
-					{#if report.targetBody}<blockquote>{report.targetBody}</blockquote>{:else}<p
-							class="removed-note"
-						>
+					{#if report.targetBody}<blockquote>
+							{report.targetType === 'community'
+								? `Community description: ${report.targetBody}`
+								: report.targetBody}
+						</blockquote>{:else}<p class="removed-note">
 							The reported content is no longer available.
 						</p>{/if}
 					<p class="report-reason"><strong>Report reason</strong>{report.reason}</p>
@@ -105,6 +108,11 @@
 								href={`/p/${report.targetPostId}`}
 								target="_blank"
 								rel="noreferrer">Open target <ArrowUpRight size={12} /></a
+							>{/if}
+						{#if report.targetType === 'community' && report.communitySlug}<a
+								href={`/r/${report.communitySlug}`}
+								target="_blank"
+								rel="noreferrer">Open community <ArrowUpRight size={12} /></a
 							>{/if}
 					</div>
 					<div class="decision-row">
@@ -131,7 +139,7 @@
 									disabled={busyId === report.id}
 									onclick={() => decide(report, 'dismissed')}><X size={13} /> Dismiss</button
 								>{/if}
-							{#if report.targetBody && report.status !== 'resolved'}<button
+							{#if report.targetBody && report.targetType !== 'community' && report.status !== 'resolved'}<button
 									class="core-button danger"
 									disabled={busyId === report.id}
 									onclick={() => decide(report, 'resolved', true)}
