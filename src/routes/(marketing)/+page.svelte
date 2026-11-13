@@ -11,14 +11,43 @@
 	const audio = getContext<SiteAudio>('site-audio');
 	let videoElement: HTMLVideoElement;
 	let musicElement: HTMLAudioElement;
-	let videoLoaded = $state(false);
 	let videoEnded = $state(false);
 	let muted = $state(audio.getMuted());
 	let volume = $state(audio.getVolume());
 
 	onMount(() => {
-		videoElement.playbackRate = 0.3;
-		videoElement.play().catch(() => undefined);
+		const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+		const saveData = navigator.connection?.saveData === true;
+		const slowConnection = ['slow-2g', '2g'].includes(navigator.connection?.effectiveType ?? '');
+		if (reducedMotion || saveData || slowConnection) return;
+
+		const startVideo = () => {
+			if (document.hidden) return;
+			videoElement.src = '/assets/video/worldloop.mp4';
+			videoElement.playbackRate = 0.3;
+			videoElement.load();
+			void videoElement.play().catch(() => undefined);
+		};
+		const handleVisibilityChange = () => {
+			if (document.hidden) {
+				videoElement.pause();
+			} else if (videoElement.src) {
+				void videoElement.play().catch(() => undefined);
+			}
+		};
+		document.addEventListener('visibilitychange', handleVisibilityChange);
+		if (window.requestIdleCallback) {
+			const idleHandle = window.requestIdleCallback(startVideo, { timeout: 2500 });
+			return () => {
+				window.cancelIdleCallback?.(idleHandle);
+				document.removeEventListener('visibilitychange', handleVisibilityChange);
+			};
+		}
+		const timeoutHandle = window.setTimeout(startVideo, 1200);
+		return () => {
+			window.clearTimeout(timeoutHandle);
+			document.removeEventListener('visibilitychange', handleVisibilityChange);
+		};
 	});
 
 	$effect(() => {
@@ -27,7 +56,13 @@
 		if (!musicElement) return;
 		musicElement.muted = muted;
 		musicElement.volume = volume;
-		if (!muted) musicElement.play().catch(() => undefined);
+		if (!muted) {
+			if (!musicElement.src) {
+				musicElement.src = '/assets/music/eternalqueen.mp3';
+				musicElement.load();
+			}
+			void musicElement.play().catch(() => undefined);
+		}
 	});
 </script>
 
@@ -67,30 +102,20 @@
 	<div class="absolute inset-0 z-0 overflow-hidden bg-black">
 		<video
 			bind:this={videoElement}
-			src="/assets/video/worldloop.mp4"
 			class="h-full w-full object-cover"
 			muted
 			playsinline
-			preload="auto"
+			preload="none"
+			poster="/assets/worldview/ezgif-frame-120.jpg"
 			loop
-			oncanplay={() => (videoLoaded = true)}
-			onloadeddata={() => (videoLoaded = true)}
 			onended={() => (videoEnded = true)}
-			style:opacity={videoLoaded ? 1 : 0}
 		>
 		</video>
 		<div
 			class="pointer-events-none absolute inset-x-0 bottom-0 h-[35%] bg-gradient-to-t from-black to-transparent"
 		></div>
 	</div>
-	<audio
-		bind:this={musicElement}
-		src="/assets/music/eternalqueen.mp3"
-		autoplay
-		loop
-		{muted}
-		class="hidden"
-	></audio>
+	<audio bind:this={musicElement} loop preload="none" {muted} class="hidden"></audio>
 	<main class="relative z-10 flex flex-grow flex-col items-center justify-center">
 		<section
 			class="relative z-10 mx-auto flex w-full max-w-7xl flex-col items-center justify-center px-6 text-center"

@@ -5,6 +5,8 @@ The Sanctyria web application is a server-rendered SvelteKit site for the public
 ## Features
 
 - Public marketing pages, journal, studio, and search-engine/social metadata.
+- A `/donate` page for configured Stripe, PayPal, Cash App, and direct crypto support.
+- A standalone Node deployment target with precompressed assets, Caddy caching headers, and reduced-data homepage media loading.
 - A privacy-choice banner gates first-party pageview aggregates and optional browser error monitoring until visitors opt in.
 - The sitemap includes only published editorial routes and user-generated pages that pass the server-side indexing policy.
 - Community feeds, profiles with customizable avatar and banner image URLs, communities, replies, notifications, and moderation.
@@ -16,7 +18,7 @@ The app is organized with SvelteKit route groups; group names in parentheses are
 
 | Area           | Source directory          | Public routes                                                                                                          |
 | -------------- | ------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
-| Marketing      | `src/routes/(marketing)/` | `/`, `/about`, `/journal`, `/studio`, and related pages                                                                |
+| Marketing      | `src/routes/(marketing)/` | `/`, `/about`, `/journal`, `/studio`, `/donate`, and related pages                                                     |
 | Community      | `src/routes/(community)/` | `/home`, `/r/:communityName`, `/u/:username`, `/p/:postId`, `/search`, and related pages                               |
 | Administration | `src/routes/(admin)/`     | `/core`, `/core/users`, `/core/communities`, `/core/moderation`, `/core/marketing`, `/core/banners`, `/core/analytics` |
 
@@ -44,6 +46,7 @@ Run the backend separately from `../Backend/`. The web UI and same-origin proxy 
 | Command           | Description                                                        |
 | ----------------- | ------------------------------------------------------------------ |
 | `npm run dev`     | Start the Vite/SvelteKit development server.                       |
+| `npm run start`   | Run the standalone production Node server from `build/`.           |
 | `npm run check`   | Synchronize SvelteKit types and run Svelte/TypeScript diagnostics. |
 | `npm run build`   | Create the production build.                                       |
 | `npm run preview` | Serve the production build locally.                                |
@@ -83,14 +86,14 @@ static/
 
 ## Deployment notes
 
-- Deploy to Netlify with the configured Node-based `adapter-netlify` adapter. The Netlify build uses Node.js 22, runs `npm run build`, and publishes the adapter's `build/` output. This is a server-rendered deployment using Netlify Functions, not Edge Functions.
-- When deploying this monorepo, set Netlify's base directory to `Web-Svelte` so it uses this directory's `netlify.toml`.
-- The adapter generates a Netlify server function with a catch-all route for SvelteKit pages, so deep links and reloads are handled by SvelteKit. Do not add the static-SPA `/* /index.html 200` fallback: this app has no root `index.html`, and that rule would bypass server-rendered routing.
-- Set `COMMUNITY_BACKEND_URL` to the backend's private/reachable HTTP or HTTPS origin in the web server environment. Production API requests require it; the proxy returns an explicit `503` configuration error if it is missing or invalid. Keep the API same-origin to browsers through the `/api/community/*` proxy.
+- The production target is a Linux VPS using SvelteKit's Node adapter. `npm run build` emits a Node server in `build/`, static assets in `build/client/`, and precompressed assets. Run the server with `node build` under a process manager such as systemd.
+- Hostinger deployment notes for running this frontend under PM2 behind an existing Dockerized Caddy, while the API stays on Render, are in [`deploy/hostinger/README.md`](./deploy/hostinger/README.md).
+- Set `COMMUNITY_BACKEND_URL` to the backend's reachable HTTP or HTTPS origin in the web server environment. Production API requests require it; the proxy returns an explicit `503` configuration error if it is missing or invalid. Keep the API same-origin to browsers through the `/api/community/*` proxy.
+- Configure Cloudflare Turnstile site and secret keys on the backend, plus payment-provider credentials and webhook IDs as described in `../Backend/README.md`. The browser receives only the public Turnstile site key. Stripe and PayPal buttons remain disabled until server-side checkout and webhook configuration is complete.
 - The proxy caps forwarded request bodies at 1 MiB and ordinary upstream requests at 15 seconds. The `/api/community/events` SSE request is exempt from the proxy timeout; backend streams are capped at 15 minutes.
-- Keep SvelteKit routes and helpers platform-neutral when possible. If moving away from Netlify, replace `adapter-netlify` with the target platform's adapter and validate a deployment build there.
 - The social image routes run on the server and require the Node-compatible `sharp` package and the files under `static/assets/`.
-- Branded social-preview text is rendered with Noto Sans and Noto Serif from `static/assets/fonts/` to avoid dependence on fonts installed by the hosting platform. `netlify.toml` includes those fonts and the renderer's image assets in the server function package. The included SIL Open Font License files document redistribution terms.
+- Branded social-preview text is rendered with Noto Sans and Noto Serif from `static/assets/fonts/` to avoid dependence on fonts installed by the hosting platform. The included SIL Open Font License files document redistribution terms.
+- The homepage delays its background video until the browser is idle and omits it on reduced-motion, Save-Data, or slow 2G connections. Music loads only after a visitor enables it. Character art is served as WebP in website components; original PNG files remain for compatibility.
 - Configure the production site's canonical origin consistently with the `https://sanctyria.com` social metadata URLs.
 - The privacy banner stores a versioned choice in browser local storage. Optional first-party pageview aggregates and browser Sentry are disabled until opt-in; Do Not Track remains honored. Review the consent wording, applicable regional requirements, disclosures, and retention policy before production use.
 - Configure `VITE_SENTRY_DSN` for the browser project and `SENTRY_DSN` for the backend project only after creating the corresponding Sentry projects. Both SDK integrations disable automatic user, cookie, header, body, and query-string collection; the browser SDK starts only after optional consent.

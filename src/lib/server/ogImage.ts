@@ -9,7 +9,7 @@ import sharp, { type OverlayOptions } from 'sharp';
 const width = 1200;
 const height = 630;
 const assetsPath = resolve(process.cwd(), 'static', 'assets');
-const characters = ['ember.png', 'kai.png', 'lib.png', 'saphy.png'];
+const characters = ['ember.webp', 'kai.webp', 'lib.webp', 'saphy.webp'];
 const ogFonts = [
 	resolve(assetsPath, 'fonts', 'NotoSans-Variable.ttf'),
 	resolve(assetsPath, 'fonts', 'NotoSerif-Variable.ttf')

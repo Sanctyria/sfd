@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { goto, invalidateAll } from '$app/navigation';
 	import { page } from '$app/state';
+	import { onMount } from 'svelte';
 	import { ArrowUpRight, Eye, EyeOff, Flame } from '@lucide/svelte';
 
 	interface Props {
@@ -16,13 +17,56 @@
 	let displayName = $state('');
 	let password = $state('');
 	let confirmPassword = $state('');
+	let turnstileToken = $state('');
+	let challengeContainer = $state<HTMLDivElement>();
+	let widgetId: string | undefined;
+	let securityOptionsLoaded = $state(false);
 	let passwordVisible = $state(false);
 	let submitting = $state(false);
 	let errorMessage = $state('');
+	let turnstileSiteKey = $state('');
 	const isSignup = $derived(mode === 'signup');
 	const returnTo = $derived.by(() => {
 		const destination = page.url.searchParams.get('returnTo') ?? '/home';
 		return destination.startsWith('/') && !destination.startsWith('//') ? destination : '/home';
+	});
+
+	onMount(() => {
+		let active = true;
+		void loadSecurityOptions()
+			.then(async (siteKey) => {
+				if (!siteKey) return;
+				turnstileSiteKey = siteKey;
+				await loadTurnstile();
+				if (!active || !challengeContainer) return;
+				if (!window.turnstile) throw new Error('Turnstile failed');
+				widgetId = window.turnstile?.render(challengeContainer, {
+					sitekey: turnstileSiteKey,
+					action: isSignup ? 'signup' : 'login',
+					theme: 'dark',
+					callback: (token) => {
+						turnstileToken = token;
+						errorMessage = '';
+					},
+					'expired-callback': () => (turnstileToken = ''),
+					'error-callback': () => {
+						turnstileToken = '';
+						errorMessage = 'Security verification could not load. Refresh and try again.';
+					}
+				});
+			})
+			.then(() => {
+				if (active) securityOptionsLoaded = true;
+			})
+			.catch(() => {
+				if (active) {
+					errorMessage = 'Security verification could not load. Refresh and try again.';
+				}
+			});
+		return () => {
+			active = false;
+			if (widgetId) window.turnstile?.remove(widgetId);
+		};
 	});
 
 	async function submit(event: SubmitEvent) {
@@ -32,11 +76,21 @@
 			errorMessage = 'Passwords do not match.';
 			return;
 		}
+		if (!securityOptionsLoaded) {
+			errorMessage = 'Security verification is still loading. Try again in a moment.';
+			return;
+		}
+		if (turnstileSiteKey && !turnstileToken) {
+			errorMessage = 'Complete the security check before continuing.';
+			return;
+		}
 
 		submitting = true;
 		try {
 			const endpoint = isSignup ? 'signup' : 'login';
-			const payload = isSignup ? { username, displayName, password } : { username, password };
+			const payload = isSignup
+				? { username, displayName, password, turnstileToken }
+				: { username, password, turnstileToken };
 			const response = await fetch(`/api/community/auth/${endpoint}`, {
 				method: 'POST',
 				credentials: 'same-origin',
@@ -54,7 +108,42 @@
 			errorMessage = 'The community service is unavailable. Try again shortly.';
 		} finally {
 			submitting = false;
+			turnstileToken = '';
+			if (widgetId) window.turnstile?.reset(widgetId);
 		}
+	}
+
+	function loadTurnstile(): Promise<void> {
+		if (window.turnstile) return Promise.resolve();
+		return new Promise((resolve, reject) => {
+			const existingScript = document.querySelector<HTMLScriptElement>(
+				'script[data-sanctyria-turnstile]'
+			);
+			if (existingScript) {
+				existingScript.addEventListener('load', () => resolve(), { once: true });
+				existingScript.addEventListener('error', () => reject(new Error('Turnstile failed')), {
+					once: true
+				});
+				return;
+			}
+			const script = document.createElement('script');
+			script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
+			script.async = true;
+			script.defer = true;
+			script.dataset.sanctyriaTurnstile = '';
+			script.onload = () => resolve();
+			script.onerror = () => reject(new Error('Turnstile failed'));
+			document.head.append(script);
+		});
+	}
+
+	async function loadSecurityOptions(): Promise<string | null> {
+		const response = await fetch('/api/community/auth/security-options', {
+			headers: { accept: 'application/json' }
+		});
+		if (!response.ok) throw new Error('Security options are unavailable.');
+		const result = (await response.json()) as { turnstileSiteKey?: string | null };
+		return result.turnstileSiteKey?.trim() || null;
 	}
 </script>
 
@@ -143,6 +232,9 @@
 					placeholder="Repeat your password"
 				/>
 			</label>
+		{/if}
+		{#if turnstileSiteKey}
+			<div class="min-h-[65px]" bind:this={challengeContainer}></div>
 		{/if}
 		{#if errorMessage}
 			<p

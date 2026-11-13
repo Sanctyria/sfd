@@ -8,7 +8,7 @@
 		{
 			id: 'emberlyn',
 			name: 'EMBERLYN',
-			image: '/assets/characters/ember.png',
+			image: '/assets/characters/ember.webp',
 			color: '#F4845F',
 			error: 'Area Devoured.',
 			lore: 'The path forward has been swallowed by the molten core. The star-ashes offer no passage here.',
@@ -17,7 +17,7 @@
 		{
 			id: 'kiaren',
 			name: 'KIAREN',
-			image: '/assets/characters/kai.png',
+			image: '/assets/characters/kai.webp',
 			color: '#6BBF7A',
 			error: 'Ruin Unearthed.',
 			lore: 'This coordinate has petrified. Only crystal chambers and magnetic currents remain in the silence.',
@@ -26,7 +26,7 @@
 		{
 			id: 'liber',
 			name: 'LIBER',
-			image: '/assets/characters/lib.png',
+			image: '/assets/characters/lib.webp',
 			color: '#E882B4',
 			error: 'Illusion Dispersed.',
 			lore: 'Electromagnetic signals have refracted into nothingness. You chase a light that was never here.',
@@ -35,7 +35,7 @@
 		{
 			id: 'saphyran',
 			name: 'SAPHYRAN',
-			image: '/assets/characters/saphy.png',
+			image: '/assets/characters/saphy.webp',
 			color: '#6EB5FF',
 			error: 'Absolute Zero.',
 			lore: 'The thermal energy here has collapsed. Connection flash-frozen in the depths of ancient comets.',

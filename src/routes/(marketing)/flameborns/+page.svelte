@@ -10,7 +10,7 @@
 	const characters = [
 		{
 			name: 'EMBERLYN',
-			image: '/assets/characters/ember.png',
+			image: '/assets/characters/ember.webp',
 			voice: '/assets/voice/ember.mp3',
 			color: '#F4845F',
 			description:
@@ -18,7 +18,7 @@
 		},
 		{
 			name: 'KIAREN',
-			image: '/assets/characters/kai.png',
+			image: '/assets/characters/kai.webp',
 			voice: '/assets/voice/kia.mp3',
 			color: '#6BBF7A',
 			description:
@@ -26,7 +26,7 @@
 		},
 		{
 			name: 'LIBER',
-			image: '/assets/characters/lib.png',
+			image: '/assets/characters/lib.webp',
 			voice: '/assets/voice/lib.mp3',
 			color: '#E882B4',
 			description:
@@ -34,7 +34,7 @@
 		},
 		{
 			name: 'SAPHYRAN',
-			image: '/assets/characters/saphy.png',
+			image: '/assets/characters/saphy.webp',
 			voice: '/assets/voice/saphy.mp3',
 			color: '#6EB5FF',
 			description:

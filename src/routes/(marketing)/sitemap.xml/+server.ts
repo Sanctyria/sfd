@@ -11,6 +11,7 @@ const routes = [
 	'/studio',
 	'/journal',
 	'/partnership',
+	'/donate',
 	'/roadmap',
 	'/reach-us'
 ];

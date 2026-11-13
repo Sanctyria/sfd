@@ -96,10 +96,10 @@
 		})),
 		...(
 			[
-				['ember', 'Ember', 'ember.png', 'A flame that remembers.'],
-				['kai', 'Kai', 'kai.png', 'A new presence in the living world.'],
-				['lib', 'Lib', 'lib.png', 'A portrait from the Sanctyrian archive.'],
-				['saphy', 'Saphy', 'saphy.png', 'A portrait from the Sanctyrian archive.']
+				['ember', 'Ember', 'ember.webp', 'A flame that remembers.'],
+				['kai', 'Kai', 'kai.webp', 'A new presence in the living world.'],
+				['lib', 'Lib', 'lib.webp', 'A portrait from the Sanctyrian archive.'],
+				['saphy', 'Saphy', 'saphy.webp', 'A portrait from the Sanctyrian archive.']
 			] as const
 		).map(([id, title, file, note]) => ({
 			id: `portrait-${id}`,

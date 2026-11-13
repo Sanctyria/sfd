@@ -7,6 +7,7 @@
 		ArrowUpRight,
 		ChevronDown,
 		Flame,
+		Heart,
 		Handshake,
 		Mail,
 		Map,
@@ -23,7 +24,7 @@
 	import type { LayoutProps } from './$types';
 
 	let { children }: LayoutProps = $props();
-	let muted = $state(false);
+	let muted = $state(true);
 	let volume = $state(0.55);
 	let volumeExpanded = $state(false);
 	let mobileMenuOpen = $state(false);
@@ -299,7 +300,7 @@
 				<a href="/studio" class={navClass('studio', currentPage, isDarkPage)}>Studio</a>
 				<details class="group relative">
 					<summary
-						class={`flex cursor-pointer list-none items-center gap-1 ${navClass(['partnership', 'reach-us'].includes(currentPage) ? currentPage : 'more', currentPage, isDarkPage)}`}
+						class={`flex cursor-pointer list-none items-center gap-1 ${navClass(['partnership', 'reach-us', 'donate'].includes(currentPage) ? currentPage : 'more', currentPage, isDarkPage)}`}
 						>More <ChevronDown
 							size={13}
 							class="transition-transform group-open:rotate-180"
@@ -361,6 +362,25 @@
 									class={`shrink-0 opacity-35 transition-all group-hover/item:translate-x-0.5 group-hover/item:-translate-y-0.5 group-hover/item:opacity-100 ${isDarkPage ? 'text-emerald-200' : 'text-emerald-800'}`}
 								/>
 							</a>
+							<a
+								href="/donate"
+								class={`group/item flex items-center gap-3 px-3 py-3 transition-colors ${isDarkPage ? 'hover:bg-white/[0.07]' : 'hover:bg-black/[0.045]'}`}
+							>
+								<span
+									class={`flex h-9 w-9 shrink-0 items-center justify-center border ${isDarkPage ? 'border-white/10 text-orange-200/80' : 'border-black/10 text-orange-800'}`}
+									><Heart size={16} strokeWidth={1.5} /></span
+								>
+								<span class="min-w-0 flex-1"
+									><span class="block text-[13px] font-medium">Support Sanctyria</span><span
+										class={`mt-0.5 block text-[10px] ${isDarkPage ? 'text-white/40' : 'text-black/45'}`}
+										>Help keep the Eternal Flame burning</span
+									></span
+								>
+								<ArrowUpRight
+									size={14}
+									class={`shrink-0 opacity-35 transition-all group-hover/item:translate-x-0.5 group-hover/item:-translate-y-0.5 group-hover/item:opacity-100 ${isDarkPage ? 'text-orange-200' : 'text-orange-800'}`}
+								/>
+							</a>
 						</div>
 					</div>
 				</details>
@@ -393,7 +413,7 @@
 			<div
 				class={`absolute top-full right-4 left-4 z-50 flex max-h-[calc(100vh-6rem)] flex-col space-y-3 overflow-y-auto rounded-2xl border px-8 py-6 shadow-xl backdrop-blur-lg md:hidden ${isDarkPage ? 'border-white/10 bg-[#080809]/95 text-white' : 'border-white/40 bg-white/90 text-brand-black'}`}
 			>
-				{#each [['Home', '/'], ['About', '/about'], ['Flameborns', '/flameborns'], ['Nations', '/nations'], ['World', 'https://world.sanctyria.com'], ['Studio', '/studio'], ['Journal', '/journal'], ['Partnerships', '/partnership'], ['Roadmap', '/roadmap'], ['Reach Us', '/reach-us']] as item (item[1])}
+				{#each [['Home', '/'], ['About', '/about'], ['Flameborns', '/flameborns'], ['Nations', '/nations'], ['World', 'https://world.sanctyria.com'], ['Studio', '/studio'], ['Journal', '/journal'], ['Partnerships', '/partnership'], ['Roadmap', '/roadmap'], ['Support Sanctyria', '/donate'], ['Reach Us', '/reach-us']] as item (item[1])}
 					<a
 						href={item[1]}
 						onclick={() => (mobileMenuOpen = false)}

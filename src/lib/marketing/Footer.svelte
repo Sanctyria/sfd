@@ -46,6 +46,9 @@
 				<a href="/roadmap" class="text-xs text-white/50 transition-colors hover:text-[#10b981]"
 					>Roadmap</a
 				>
+				<a href="/donate" class="text-xs text-white/50 transition-colors hover:text-[#10b981]"
+					>Support Sanctyria</a
+				>
 				<a href="/studio" class="text-xs text-white/50 transition-colors hover:text-[#10b981]"
 					>Studio Workspace</a
 				>

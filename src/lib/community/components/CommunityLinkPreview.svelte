@@ -26,7 +26,7 @@
 
 	let { url, title, description, domain }: Props = $props();
 
-	const characters = ['ember.png', 'kai.png', 'lib.png', 'saphy.png'];
+	const characters = ['ember.webp', 'kai.webp', 'lib.webp', 'saphy.webp'];
 	let preview = $state<PreviewMetadata | null>(null);
 	let previewLoaded = $state(false);
 

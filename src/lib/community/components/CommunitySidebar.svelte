@@ -287,7 +287,7 @@
 		bottom: 100px;
 		width: 175px;
 		height: 190px;
-		background: url('/assets/characters/ember.png') center / contain no-repeat;
+		background: url('/assets/characters/ember.webp') center / contain no-repeat;
 		opacity: 0.2;
 		pointer-events: none;
 	}
