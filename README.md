@@ -24,7 +24,7 @@ The app is organized with SvelteKit route groups; group names in parentheses are
 
 ## Requirements
 
-- Node.js 22 or newer
+- Node.js 22.12 or newer
 - npm
 - The Sanctyria Backend running locally or reachable from the web server
 
@@ -37,7 +37,7 @@ npm install
 npm run dev
 ```
 
-By default, the community API proxy targets `http://127.0.0.1:3000` outside production. Production requires `COMMUNITY_BACKEND_URL`; set it to the backend origin in the frontend process environment before starting the server. `VITE_SENTRY_DSN` is optional and enables browser error monitoring only after a visitor accepts optional analytics and diagnostics.
+By default, the community API proxy targets `http://127.0.0.1:3000` outside production. Production requires `COMMUNITY_BACKEND_URL`; set it in the frontend process environment or the root `.env` file before starting the server. `npm run start` loads the root `.env` using Node.js, and the standalone server uses its `PORT` value (default `3000`). Existing process environment variables take precedence over values in `.env`. `VITE_SENTRY_DSN` is optional and enables browser error monitoring only after a visitor accepts optional analytics and diagnostics.
 
 Run the backend separately from `../Backend/`. The web UI and same-origin proxy are not substitutes for backend authentication or authorization; protected actions are verified by the API.
 
@@ -86,7 +86,7 @@ static/
 
 ## Deployment notes
 
-- The production target is a Linux VPS using SvelteKit's Node adapter. `npm run build` emits a Node server in `build/`, static assets in `build/client/`, and precompressed assets. Run the server with `node build` under a process manager such as systemd.
+- The production target is a Linux VPS using SvelteKit's Node adapter. `npm run build` emits a Node server in `build/`, static assets in `build/client/`, and precompressed assets. Run `npm run start` under a process manager such as systemd; it reads `PORT` and other settings from the root `.env` file when present.
 - Hostinger deployment notes for running this frontend under PM2 behind an existing Dockerized Caddy, while the API stays on Render, are in [`deploy/hostinger/README.md`](./deploy/hostinger/README.md).
 - Set `COMMUNITY_BACKEND_URL` to the backend's reachable HTTP or HTTPS origin in the web server environment. Production API requests require it; the proxy returns an explicit `503` configuration error if it is missing or invalid. Keep the API same-origin to browsers through the `/api/community/*` proxy.
 - Configure Cloudflare Turnstile site and secret keys on the backend, plus payment-provider credentials and webhook IDs as described in `../Backend/README.md`. The browser receives only the public Turnstile site key. Stripe and PayPal buttons remain disabled until server-side checkout and webhook configuration is complete.

@@ -4,7 +4,7 @@ Run the SvelteKit frontend on the VPS with Node.js and PM2. Keep the community A
 
 ## Initial frontend deployment
 
-1. Make sure Node.js 22+, Git, and PM2 are installed on the VPS. Clone the **Web-Svelte repository** using your normal deployment user and enter the repo:
+1. Make sure Node.js 22.12+, Git, and PM2 are installed on the VPS. Clone the **Web-Svelte repository** using your normal deployment user and enter the repo:
 
    ```sh
    git clone <Web-Svelte-repository-URL> /path/to/Web-Svelte
@@ -13,26 +13,19 @@ Run the SvelteKit frontend on the VPS with Node.js and PM2. Keep the community A
    npm run build
    ```
 
-   The build creates a standalone Node server in `build/` and static files in `build/client/`.
+   The build creates a standalone Node server in `build/` and static files in `build/client/`. Create the root `.env` with `cp deploy/hostinger/web.env.example .env`, then set the production values there. Keep `.env` private and do not commit it.
 
 2. Start the server under PM2, replacing the Render URL with your actual backend service origin (scheme and hostname only; don't append `/api/v1`):
 
    ```sh
-   NODE_ENV=production \
-   HOST=0.0.0.0 \
-   PORT=3001 \
-   ORIGIN=https://sanctyria.com \
-   ADDRESS_HEADER=x-forwarded-for \
-   XFF_DEPTH=1 \
-   COMMUNITY_BACKEND_URL=https://YOUR-BACKEND.onrender.com \
-   pm2 start build/index.js --name sanctyria-web
+   pm2 start npm --name sanctyria-web -- run start
    pm2 save
    pm2 startup
    ```
 
-   Run the `pm2 startup` command it prints, then run `pm2 save` again. PM2 will restore this process after a reboot with the environment captured at startup. `HOST=0.0.0.0` lets a bridge-network Caddy container reach the host process; ensure port 3001 is blocked from the public internet by your VPS firewall/security group and is reachable only from your Docker/Caddy setup.
+   `npm run start` reads the root `.env` file, including `PORT=3009`. Run the `pm2 startup` command it prints, then run `pm2 save` again. PM2 will restore this process after a reboot. Set `HOST` in `.env` to the host address reachable by the Caddy container; ensure port 3009 is blocked from the public internet by your VPS firewall/security group and is reachable only from your Docker/Caddy setup. If `sanctyria-web` is already managed by PM2 with the old direct `build/index.js` command, delete that PM2 entry before starting it with the command above so it uses the new start command.
 
-3. Configure your existing Caddy Docker setup to reach the host's port 3001. For a Compose-managed Caddy container, a common setup is to add this under the Caddy service and recreate it:
+3. Configure your existing Caddy Docker setup to reach the host's port 3009. For a Compose-managed Caddy container, a common setup is to add this under the Caddy service and recreate it:
 
    ```yaml
    extra_hosts:
@@ -42,10 +35,10 @@ Run the SvelteKit frontend on the VPS with Node.js and PM2. Keep the community A
    Then add/update the site's existing Caddy route to use:
 
    ```caddyfile
-   reverse_proxy host.docker.internal:3001
+   reverse_proxy host.docker.internal:3009
    ```
 
-   Keep your existing Caddyfile structure, TLS settings, Docker networks, and routes for other services. Validate/reload Caddy using your existing process. The exact host address and firewall rule depend on your Docker network and VPS firewall; verify the Caddy container can reach port 3001 before switching the domain.
+   Keep your existing Caddyfile structure, TLS settings, Docker networks, and routes for other services. Validate/reload Caddy using your existing process. The exact host address and firewall rule depend on your Docker network and VPS firewall; verify the Caddy container can reach port 3009 before switching the domain.
 
 ## Render backend configuration
 
