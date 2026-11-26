@@ -6,6 +6,7 @@ const maximumUrls = 50_000;
 const routes = [
 	'/',
 	'/about',
+	'/sanctity',
 	'/flameborns',
 	'/nations',
 	'/studio',

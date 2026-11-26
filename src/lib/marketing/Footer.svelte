@@ -18,9 +18,8 @@
 				>
 			</a>
 			<p class="max-w-sm text-xs leading-relaxed text-white/40 sm:text-sm">
-				Sanctyria is a dark fantasy universe and creative transmedia ecosystem built around the
-				concept of creation as survival. Gather around the Eternal Flame to explore nations and
-				build digital sanctuaries.
+				Sanctyria is an original dark-fantasy universe told through stories, art, music, and
+				interactive experiences. Sanctity is its creator-focused community app.
 			</p>
 		</div>
 		<div class="grid grid-cols-2 gap-4 md:col-span-4">
@@ -37,6 +36,9 @@
 				>
 				<a href="/nations" class="text-xs text-white/50 transition-colors hover:text-[#f97316]"
 					>Eight Nations</a
+				>
+				<a href="/sanctity" class="text-xs text-white/50 transition-colors hover:text-[#f97316]"
+					>Sanctity Community App</a
 				>
 			</div>
 			<div class="flex flex-col space-y-2">

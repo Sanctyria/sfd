@@ -63,7 +63,7 @@
 					caption: 'Sanctyria Logo'
 				},
 				description:
-					'Sanctyria is a dark fantasy universe and creative transmedia ecosystem built around the concept of creation as survival.',
+					'Sanctyria is an original dark-fantasy universe told through stories, art, music, and interactive experiences. Sanctity is its creator-focused community app.',
 				sameAs: [
 					'https://discord.gg/sanctyria',
 					'https://x.com/sanctyria',
@@ -78,7 +78,8 @@
 				'@id': 'https://sanctyria.com/#website',
 				url: 'https://sanctyria.com',
 				name: 'Sanctyria',
-				description: 'A dark fantasy universe and creative transmedia ecosystem.',
+				description:
+					'An original dark-fantasy universe told through stories, art, music, and interactive experiences.',
 				publisher: { '@id': 'https://sanctyria.com/#organization' }
 			}
 		]
@@ -386,10 +387,10 @@
 				</details>
 			</div>
 			<a
-				href="/reach-us"
+				href="/sanctity"
 				class={`hidden items-center gap-2.5 rounded-full px-6 py-2.5 text-sm font-medium shadow-sm transition-all hover:scale-[1.03] md:flex ${isDarkPage ? 'bg-white text-black' : 'bg-brand-black text-white'}`}
 			>
-				<span class="h-2 w-2 animate-pulse rounded-full bg-[#10b981]"></span>Begin Journey
+				<span class="h-2 w-2 rounded-full bg-[#10b981]"></span>Sanctity App
 			</a>
 			<button
 				type="button"
@@ -413,7 +414,7 @@
 			<div
 				class={`absolute top-full right-4 left-4 z-50 flex max-h-[calc(100vh-6rem)] flex-col space-y-3 overflow-y-auto rounded-2xl border px-8 py-6 shadow-xl backdrop-blur-lg md:hidden ${isDarkPage ? 'border-white/10 bg-[#080809]/95 text-white' : 'border-white/40 bg-white/90 text-brand-black'}`}
 			>
-				{#each [['Home', '/'], ['About', '/about'], ['Flameborns', '/flameborns'], ['Nations', '/nations'], ['World', 'https://world.sanctyria.com'], ['Studio', '/studio'], ['Journal', '/journal'], ['Partnerships', '/partnership'], ['Roadmap', '/roadmap'], ['Support Sanctyria', '/donate'], ['Reach Us', '/reach-us']] as item (item[1])}
+				{#each [['Home', '/'], ['Sanctity App', '/sanctity'], ['About', '/about'], ['Flameborns', '/flameborns'], ['Nations', '/nations'], ['World', 'https://world.sanctyria.com'], ['Studio', '/studio'], ['Journal', '/journal'], ['Partnerships', '/partnership'], ['Roadmap', '/roadmap'], ['Support Sanctyria', '/donate'], ['Reach Us', '/reach-us']] as item (item[1])}
 					<a
 						href={item[1]}
 						onclick={() => (mobileMenuOpen = false)}
@@ -421,10 +422,10 @@
 					>
 				{/each}
 				<a
-					href="/reach-us"
+					href="/sanctity"
 					onclick={() => (mobileMenuOpen = false)}
 					class="flex w-full items-center justify-center gap-2.5 rounded-full bg-white py-3.5 text-base font-medium text-black"
-					><span class="h-2.5 w-2.5 animate-pulse rounded-full bg-[#10b981]"></span>Begin Journey</a
+					><span class="h-2.5 w-2.5 rounded-full bg-[#10b981]"></span>Explore Sanctity</a
 				>
 			</div>
 		{/if}

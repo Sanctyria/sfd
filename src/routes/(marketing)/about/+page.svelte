@@ -21,9 +21,9 @@
 				'@type': 'AboutPage',
 				'@id': `${siteUrl}/about/#webpage`,
 				url: `${siteUrl}/about`,
-				name: 'About Sanctyria | Fictional Universe Entity Guide & FAQ',
+				name: 'About Sanctyria | The Dark-Fantasy Universe',
 				description:
-					'Understand Sanctyria: the transmedia fantasy IP, the Eternal Flame, Flameborns, and the eight nations. Read our full story, glossary, and core FAQs.',
+					'Discover Sanctyria, an original dark-fantasy universe told through stories, art, music, and interactive experiences. Meet its characters and eight nations.',
 				isPartOf: { '@id': `${siteUrl}/#website` },
 				mainEntity: {
 					'@type': 'CreativeWork',
@@ -31,7 +31,7 @@
 					name: 'Sanctyria',
 					alternateName: 'Sanctyria Universe',
 					description:
-						'A dark fantasy universe and creative transmedia ecosystem built around the concept of creation as survival.',
+						'An original dark-fantasy universe told through stories, art, music, and interactive experiences.',
 					genre: 'Dark Fantasy, Magitech, Worldbuilding',
 					publisher: { '@id': `${siteUrl}/#organization` }
 				}
@@ -43,7 +43,7 @@
 				mainEntity: [
 					[
 						'What is Sanctyria?',
-						'Sanctyria is a dark fantasy transmedia universe and creative platform built on the concept of creation as survival. It contains a deep lore system, a community-driven digital sanctuary, interactive apps, and games built around the Eternal Flame.'
+						'Sanctyria is an original dark-fantasy universe told through stories, art, music, and interactive experiences. Sanctity is its creator-focused community app, where people share work, build communities, and connect.'
 					],
 					[
 						'Who created Sanctyria?',
@@ -134,7 +134,7 @@
 	const faqs = [
 		[
 			'What is Sanctyria?',
-			'Sanctyria is a dark fantasy transmedia universe and creative platform built on the concept of creation as survival. It contains a deep lore system, a community-driven digital sanctuary, interactive apps, and games built around the Eternal Flame.'
+			'Sanctyria is an original dark-fantasy universe told through stories, art, music, and interactive experiences. Sanctity is its creator-focused community app, where people share work, build communities, and connect.'
 		],
 		[
 			'Who created Sanctyria?',
@@ -267,46 +267,43 @@
 </script>
 
 <svelte:head>
-	<title>About Sanctyria | Fictional Universe Entity Guide &amp; FAQ</title>
+	<title>About Sanctyria | The Dark-Fantasy Universe</title>
 	<meta
 		name="description"
-		content="Understand Sanctyria: the transmedia fantasy IP, the Eternal Flame, Flameborns, and the eight nations. Read our full story, glossary, and core FAQs."
+		content="Discover Sanctyria, an original dark-fantasy universe told through stories, art, music, and interactive experiences. Meet its characters and eight nations."
 	/>
 	<meta
 		name="keywords"
 		content="What is Sanctyria, Sanctyria lore, fantasy worldbuilding, Sanctyria FAQ, Sanctyria glossary"
 	/>
 	<link rel="canonical" href="https://sanctyria.com/about" />
-	<meta property="og:title" content="About Sanctyria | Fictional Universe Entity Guide &amp; FAQ" />
+	<meta property="og:title" content="About Sanctyria | The Dark-Fantasy Universe" />
 	<meta
 		property="og:description"
-		content="Understand Sanctyria: the transmedia fantasy IP, the Eternal Flame, Flameborns, and the eight nations. Read our full story, glossary, and core FAQs."
+		content="Discover Sanctyria, an original dark-fantasy universe told through stories, art, music, and interactive experiences. Meet its characters and eight nations."
 	/>
 	<meta property="og:url" content="https://sanctyria.com/about" />
 	<meta
 		property="og:image"
 		content={brandedOgImageUrl(
 			'About Sanctyria',
-			'Understand the transmedia fantasy IP, Eternal Flame, Flameborns, and eight nations.',
+			'Explore a dark-fantasy universe told through stories, art, music, and interactive experiences.',
 			'ABOUT SANCTYRIA'
 		)}
 	/>
 	<meta property="og:image:width" content="1200" />
 	<meta property="og:image:height" content="630" />
 	<meta name="twitter:card" content="summary_large_image" />
-	<meta
-		name="twitter:title"
-		content="About Sanctyria | Fictional Universe Entity Guide &amp; FAQ"
-	/>
+	<meta name="twitter:title" content="About Sanctyria | The Dark-Fantasy Universe" />
 	<meta
 		name="twitter:description"
-		content="Understand Sanctyria: the transmedia fantasy IP, the Eternal Flame, Flameborns, and the eight nations. Read our full story, glossary, and core FAQs."
+		content="Discover Sanctyria, an original dark-fantasy universe told through stories, art, music, and interactive experiences. Meet its characters and eight nations."
 	/>
 	<meta
 		name="twitter:image"
 		content={brandedOgImageUrl(
 			'About Sanctyria',
-			'Understand the transmedia fantasy IP, Eternal Flame, Flameborns, and eight nations.',
+			'Explore a dark-fantasy universe told through stories, art, music, and interactive experiences.',
 			'ABOUT SANCTYRIA'
 		)}
 	/>
@@ -338,10 +335,10 @@
 				A world ended.<br /><span class="text-[#6f6f6f] italic">One Flame endured.</span>
 			</h1>
 			<p
-				class="animate-fade-rise-delay mt-8 max-w-xl font-body text-base leading-relaxed text-white/50 select-none sm:text-lg"
+				class="animate-fade-rise-delay mt-8 max-w-xl font-body text-base leading-relaxed text-white/75 select-none sm:text-lg"
 			>
-				Through the ash of the Great Silence, Sanctyria watches.<br />Rebuilding, guarding,
-				preparing.
+				Sanctyria is an original dark-fantasy universe told through stories, art, music, and
+				interactive experiences. Its creator community lives in Sanctity.
 			</p>
 			<button
 				type="button"
@@ -439,12 +436,10 @@
 					class="mt-4 space-y-6 font-body text-base leading-relaxed font-light text-white/70 sm:text-lg"
 				>
 					<p>
-						<strong>Sanctyria</strong> is a dark fantasy universe and creative transmedia ecosystem
-						built around the core concept of <em>creation as survival</em>. Far from a single
-						product, app, or game, Sanctyria represents a comprehensive, multi-platform fictional
-						IP. The world blends deep magical systems, magitech machinery, and creator-driven
-						outputs spanning novels, digital tools, interactive media, and a decentralized creator
-						community.
+						<strong>Sanctyria</strong> is an original dark-fantasy universe told through stories,
+						art, music, and interactive experiences. Explore its places, characters, and lore—or
+						meet the creators sharing work and building communities in <strong>Sanctity</strong>,
+						our creator-focused community app.
 					</p>
 					<p>
 						At the center of Sanctyria is the <strong>Eternal Flame</strong>, an ancestral system
