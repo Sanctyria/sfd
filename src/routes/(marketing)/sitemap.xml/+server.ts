@@ -7,6 +7,8 @@ const routes = [
 	'/',
 	'/about',
 	'/sanctity',
+	'/terms',
+	'/privacy',
 	'/flameborns',
 	'/nations',
 	'/studio',

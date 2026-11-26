@@ -123,6 +123,24 @@
 		class="mx-auto flex max-w-7xl flex-col items-center justify-between pt-8 font-mono text-[10px] tracking-wider text-white/30 sm:flex-row"
 	>
 		<span>© {currentYear} SANCTYRIA.COM // ALL CODES SECURED</span>
-		<span class="mt-2 uppercase sm:mt-0">Creation is Survival · Powered by the Eternal Flame</span>
+		<nav
+			aria-label="Legal and privacy"
+			class="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 sm:mt-0"
+		>
+			<a href="/terms" class="transition-colors hover:text-white">Terms</a>
+			<a href="/privacy" class="transition-colors hover:text-white">Privacy</a>
+			<button
+				type="button"
+				class="transition-colors hover:text-white"
+				onclick={() => window.dispatchEvent(new Event('sanctyria:open-privacy-settings'))}
+			>
+				Privacy choices
+			</button>
+		</nav>
 	</div>
+	<p
+		class="mx-auto mt-5 max-w-7xl text-center font-mono text-[10px] tracking-wider text-white/30 uppercase"
+	>
+		Creation is Survival · Powered by the Eternal Flame
+	</p>
 </footer>

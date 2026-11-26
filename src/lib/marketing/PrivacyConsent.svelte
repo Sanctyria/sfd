@@ -9,7 +9,16 @@
 	let analyticsAllowed = $state(false);
 	let saveError = $state('');
 
+	function openPrivacySettings() {
+		settingsOpen = true;
+		visible = true;
+		saveError = '';
+	}
+
 	onMount(() => {
+		window.addEventListener('sanctyria:open-privacy-settings', openPrivacySettings);
+		const cleanup = () =>
+			window.removeEventListener('sanctyria:open-privacy-settings', openPrivacySettings);
 		let stored: string | null;
 		try {
 			stored = localStorage.getItem(storageKey);
@@ -17,11 +26,11 @@
 			console.error('Could not read saved privacy preferences.', cause);
 			visible = true;
 			saveError = 'Browser storage is unavailable. Optional analytics will remain off.';
-			return;
+			return cleanup;
 		}
 		if (!stored) {
 			visible = true;
-			return;
+			return cleanup;
 		}
 
 		try {
@@ -36,12 +45,13 @@
 			) {
 				analyticsAllowed = consent.analytics;
 				onConsentChange(consent.analytics);
-				return;
+				return cleanup;
 			}
 		} catch (cause) {
 			console.error('Could not read saved privacy preferences.', cause);
 		}
 		visible = true;
+		return cleanup;
 	});
 
 	function saveConsent(allowAnalytics: boolean) {

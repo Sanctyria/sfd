@@ -10,10 +10,16 @@
 	} from '@lucide/svelte';
 	import Footer from '#lib/marketing/Footer.svelte';
 
+	let downloadDialog: HTMLDialogElement;
+	const windowsDownloads = {
+		portable:
+			'https://github.com/Sanctyria/Sanctity-Software/releases/download/v1.0.0/Sanctity-Windows-x64-Production-1.0.1.zip',
+		installer:
+			'https://github.com/Sanctyria/Sanctity-Software/releases/download/installer.v1.0.0/Sanctity-Setup-1.0.1-x64.exe'
+	};
 	const platforms = [
 		{ name: 'iOS', note: 'In internal testing' },
-		{ name: 'Android', note: 'In internal testing' },
-		{ name: 'Windows', note: 'In internal testing' }
+		{ name: 'Android', note: 'In internal testing' }
 	];
 </script>
 
@@ -73,7 +79,7 @@
 						people and communities around your interests, and keeping the conversation going.
 					</p>
 					<a
-						href="/home"
+						href="https://sanctity.sanctyria.com"
 						class="mt-7 inline-flex items-center gap-3 rounded-full bg-white px-6 py-3.5 text-sm font-semibold text-black transition-colors hover:bg-orange-100"
 					>
 						Open Sanctity on the web
@@ -139,7 +145,7 @@
 			</div>
 			<div class="grid gap-3 sm:grid-cols-2">
 				<a
-					href="/home"
+					href="https://sanctity.sanctyria.com"
 					class="group flex items-center justify-between rounded-2xl border border-orange-200/30 bg-orange-200/[0.06] p-5 transition-colors hover:bg-orange-200/[0.1]"
 				>
 					<span class="flex items-center gap-3">
@@ -154,6 +160,24 @@
 						size={17}
 					/>
 				</a>
+				<button
+					type="button"
+					onclick={() => downloadDialog.showModal()}
+					aria-haspopup="dialog"
+					class="group flex w-full items-center justify-between rounded-2xl border border-orange-200/30 bg-orange-200/[0.06] p-5 text-left transition-colors hover:bg-orange-200/[0.1]"
+				>
+					<span class="flex items-center gap-3">
+						<AudioLines class="text-orange-200" size={20} />
+						<span>
+							<span class="block font-medium">Windows</span>
+							<span class="mt-1 block text-xs text-emerald-300">Installer or portable</span>
+						</span>
+					</span>
+					<ArrowRight
+						class="text-white/50 transition-transform group-hover:translate-x-1 group-hover:text-white"
+						size={17}
+					/>
+				</button>
 				{#each platforms as platform (platform.name)}
 					<div
 						class="flex items-center justify-between rounded-2xl border border-white/10 bg-white/[0.02] p-5"
@@ -186,7 +210,7 @@
 				</p>
 			</div>
 			<a
-				href="/home"
+				href="https://sanctity.sanctyria.com"
 				class="inline-flex shrink-0 items-center gap-3 rounded-full bg-white px-6 py-3.5 text-sm font-semibold text-black transition-colors hover:bg-orange-100"
 			>
 				Open Sanctity
@@ -195,5 +219,66 @@
 		</div>
 	</section>
 </main>
+
+<dialog
+	bind:this={downloadDialog}
+	aria-labelledby="windows-download-title"
+	aria-describedby="windows-download-description"
+	class="m-auto w-[min(34rem,calc(100%-2rem))] max-w-none overflow-hidden rounded-3xl border border-white/10 bg-[#0b0b0c] p-0 text-white shadow-2xl backdrop:bg-black/75"
+>
+	<div class="p-6 sm:p-8">
+		<div class="flex items-start justify-between gap-6">
+			<div>
+				<p class="font-mono text-[10px] tracking-[0.2em] text-orange-300 uppercase">
+					Sanctity for Windows
+				</p>
+				<h2 id="windows-download-title" class="mt-3 font-display text-3xl sm:text-4xl">
+					Choose your download
+				</h2>
+			</div>
+			<button
+				type="button"
+				onclick={() => downloadDialog.close()}
+				aria-label="Close Windows download options"
+				class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-white/10 text-lg text-white/60 transition-colors hover:border-white/30 hover:text-white"
+			>
+				&times;
+			</button>
+		</div>
+		<p id="windows-download-description" class="mt-4 text-sm leading-relaxed text-white/55">
+			Choose the setup installer for a standard installation, or the portable ZIP to run Sanctity
+			without installing it.
+		</p>
+		<div class="mt-7 grid gap-3 sm:grid-cols-2">
+			<a
+				href={windowsDownloads.installer}
+				class="rounded-2xl border border-orange-200/30 bg-orange-200/[0.07] p-5 transition-colors hover:bg-orange-200/[0.12]"
+			>
+				<span class="block font-medium">Setup installer</span>
+				<span class="mt-2 block text-xs leading-relaxed text-white/50">
+					Download the .exe and follow the installation steps.
+				</span>
+				<span class="mt-5 inline-flex items-center gap-2 text-sm font-medium text-orange-100">
+					Download installer <ArrowRight size={15} />
+				</span>
+			</a>
+			<a
+				href={windowsDownloads.portable}
+				class="rounded-2xl border border-white/10 bg-white/[0.03] p-5 transition-colors hover:border-white/25 hover:bg-white/[0.06]"
+			>
+				<span class="block font-medium">Portable ZIP</span>
+				<span class="mt-2 block text-xs leading-relaxed text-white/50">
+					Download and extract the ZIP, then run Sanctity from its folder.
+				</span>
+				<span class="mt-5 inline-flex items-center gap-2 text-sm font-medium text-white/85">
+					Download portable <ArrowRight size={15} />
+				</span>
+			</a>
+		</div>
+		<p class="mt-5 text-[11px] leading-relaxed text-white/35">
+			Both downloads are official Sanctity releases from GitHub.
+		</p>
+	</div>
+</dialog>
 
 <Footer />
