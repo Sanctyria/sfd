@@ -1,7 +1,20 @@
 <script lang="ts">
 	import { goto, invalidate } from '$app/navigation';
 	import { onMount } from 'svelte';
-	import { ArrowUpRight, BadgeCheck, Flame, Globe, Pencil, Plus, Share2, X } from '@lucide/svelte';
+	import {
+		ArrowUpRight,
+		BadgeCheck,
+		BellOff,
+		Flame,
+		Globe,
+		MessageCircle,
+		MoreHorizontal,
+		Pencil,
+		Plus,
+		Share2,
+		Shield,
+		X
+	} from '@lucide/svelte';
 	import { communitySlug, videoEmbedUrl } from '#lib/community/community.js';
 	import {
 		communityApi,
@@ -12,6 +25,8 @@
 	import CommunityFollowButton from '#lib/community/components/CommunityFollowButton.svelte';
 	import CommunityLinkPreview from '#lib/community/components/CommunityLinkPreview.svelte';
 	import CommunityPostActions from '#lib/community/components/CommunityPostActions.svelte';
+	import CommunityAudioPlayer from '#lib/community/components/CommunityAudioPlayer.svelte';
+	import CommunityVideoPreview from '#lib/community/components/CommunityVideoPreview.svelte';
 	import CommunityReportButton from '#lib/community/components/CommunityReportButton.svelte';
 	import { subscribeCommunityRealtime } from '#lib/community/communityRealtime.js';
 	import type { PageProps } from './$types';
@@ -19,6 +34,10 @@
 	let { data }: PageProps = $props();
 	let activeSection = $state('Posts');
 	let toast = $state('');
+	let communityActionsOpen = $state(false);
+	let communityMuted = $derived(data.community.notificationsMuted ?? false);
+	let communityMuteSaving = $state(false);
+	let chatSettingSaving = $state(false);
 	let editOpen = $state(false);
 	let editName = $state('');
 	let editDescription = $state('');
@@ -52,7 +71,10 @@
 			data.communityUser?.communities.some((community) => community.slug === data.community.slug)
 		)
 	);
-	const sections = ['Posts', 'About', 'Members'];
+	const sections = ['Posts', 'News', 'About'];
+	const visiblePosts = $derived(
+		data.posts.filter((post) => (activeSection === 'News' ? post.isNews : !post.isNews))
+	);
 
 	$effect(() => {
 		const membersKey = data.members.map((member) => member.id).join(':');
@@ -73,6 +95,7 @@
 			void goto(`/login?returnTo=${encodeURIComponent(`/r/${data.community.slug}`)}`);
 			return;
 		}
+
 		try {
 			await communityApi<void>(
 				fetch,
@@ -83,6 +106,21 @@
 		} catch (error) {
 			toast = error instanceof Error ? error.message : 'Could not update membership.';
 			window.setTimeout(() => (toast = ''), 2200);
+		}
+	}
+
+	async function toggleCommunityPostPin(postId: string, pinned: boolean) {
+		if (!canModerateMembers) return;
+		try {
+			await communityApi<{ pinned: boolean }>(
+				fetch,
+				`posts/${encodeURIComponent(postId)}/pin/community`,
+				{ method: pinned ? 'DELETE' : 'POST' }
+			);
+			await invalidate('app:community-content');
+			showToast(pinned ? 'Post unpinned from community.' : 'Post pinned to community.');
+		} catch (error) {
+			showToast(error instanceof Error ? error.message : 'Could not update community pin.');
 		}
 	}
 
@@ -101,15 +139,66 @@
 		window.setTimeout(() => (toast = ''), 2200);
 	}
 
-	function shareCommunity() {
+	async function shareCommunity() {
 		const url = `${window.location.origin}/r/${encodeURIComponent(data.community.slug)}`;
-		if (navigator.clipboard) {
-			navigator.clipboard.writeText(url).then(
-				() => showToast('Community link copied'),
-				() => showToast(url)
+		communityActionsOpen = false;
+		try {
+			if (navigator.share) {
+				await navigator.share({ title: data.community.name, url });
+			} else if (navigator.clipboard) {
+				await navigator.clipboard.writeText(url);
+				showToast('Community link copied');
+			} else {
+				showToast(url);
+			}
+		} catch (error) {
+			if (!(error instanceof DOMException && error.name === 'AbortError')) {
+				showToast(error instanceof Error ? error.message : 'Could not share this community.');
+			}
+		}
+	}
+
+	async function toggleCommunityMute() {
+		if (!data.communityUser) {
+			void goto(`/login?returnTo=${encodeURIComponent(`/r/${data.community.slug}`)}`);
+			return;
+		}
+		communityMuteSaving = true;
+		try {
+			const muted = !communityMuted;
+			await communityApi(
+				fetch,
+				`communities/${encodeURIComponent(data.community.slug)}/notification-mute`,
+				{ method: 'PATCH', body: JSON.stringify({ muted }) }
 			);
-		} else {
-			showToast(url);
+			communityMuted = muted;
+			communityActionsOpen = false;
+			showToast(muted ? 'Community notifications muted.' : 'Community notifications unmuted.');
+		} catch (error) {
+			showToast(
+				error instanceof Error ? error.message : 'Could not update community notifications.'
+			);
+		} finally {
+			communityMuteSaving = false;
+		}
+	}
+
+	async function toggleCommunityChat() {
+		if (!isCommunityOwner || chatSettingSaving) return;
+		chatSettingSaving = true;
+		try {
+			const chatEnabled = !data.community.chatEnabled;
+			await communityApi(fetch, `communities/${encodeURIComponent(data.community.slug)}`, {
+				method: 'PATCH',
+				body: JSON.stringify({ chatEnabled })
+			});
+			communityActionsOpen = false;
+			await invalidate('app:community-content');
+			showToast(chatEnabled ? 'Community chat enabled.' : 'Community chat disabled.');
+		} catch (error) {
+			showToast(error instanceof Error ? error.message : 'Could not update community chat.');
+		} finally {
+			chatSettingSaving = false;
 		}
 	}
 
@@ -353,12 +442,14 @@
 							{data.community.name}
 						</h1>
 						<p class="mt-2 text-xs text-white/40">
-							{data.community.members} members · Public community{#if data.community.viewerRole}
+							{data.community.members} members · {data.community.postsPrivate
+								? 'Members-only posts'
+								: 'Public community'}{#if data.community.viewerRole}
 								· Your role: {data.community.viewerRole}{/if}
 						</p>
 					</div>
 				</div>
-				<div class="flex items-center gap-2">
+				<div class="hidden items-center gap-2 md:flex">
 					<button
 						type="button"
 						onclick={shareCommunity}
@@ -393,6 +484,25 @@
 						>
 					{/if}
 				</div>
+				<div class="flex items-center gap-2 md:hidden">
+					{#if !isCommunityOwner}
+						<button
+							type="button"
+							onclick={toggleJoin}
+							aria-pressed={joined}
+							class="min-w-[88px] rounded-full border border-white/15 px-4 py-2 text-xs font-medium text-white"
+							>{joined ? 'Joined' : 'Join'}</button
+						>
+					{/if}
+					<button
+						type="button"
+						onclick={() => (communityActionsOpen = true)}
+						aria-label="Community actions"
+						aria-expanded={communityActionsOpen}
+						class="grid h-9 w-9 place-items-center rounded-full border border-white/15 text-white/75"
+						><MoreHorizontal size={18} /></button
+					>
+				</div>
 			</div>
 			<p class="mt-4 max-w-2xl px-2 text-sm leading-6 text-white/65">
 				{data.community.description}
@@ -416,12 +526,12 @@
 			</div>
 		</section>
 
-		{#if activeSection === 'Posts'}
+		{#if activeSection === 'Posts' || activeSection === 'News'}
 			<section
 				aria-label={`Public posts in ${data.community.name}`}
 				class="divide-y divide-white/[0.08]"
 			>
-				{#each data.posts as post (post.id)}
+				{#each visiblePosts as post (post.id)}
 					<article class="py-5">
 						<div class="flex items-start gap-3">
 							<a
@@ -446,6 +556,10 @@
 											class="text-sky-300"
 											aria-label="Verified"
 										/>{/if}
+									{#if post.isNews}<span
+											class="rounded-full border border-orange-200/20 px-2 py-0.5 text-[8px] tracking-wide text-orange-100/80 uppercase"
+											>News</span
+										>{/if}
 									<CommunityFollowButton
 										authorUsername={post.handle.slice(1)}
 										viewerUsername={data.communityUser?.username}
@@ -488,15 +602,10 @@
 										<div
 											class="community-video mt-3 overflow-hidden border border-white/[0.08] bg-black"
 										>
-											<iframe
-												src={embedUrl}
-												title={`Video shared by ${post.name}`}
-												loading="lazy"
-												referrerpolicy="strict-origin-when-cross-origin"
-												allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-												allowfullscreen
-												class="aspect-video w-full"
-											></iframe>
+											<CommunityVideoPreview
+												url={post.url}
+												title={post.text || `Video shared by ${post.name}`}
+											/>
 										</div>
 									{:else}
 										<a
@@ -508,17 +617,43 @@
 										>
 									{/if}
 								{/if}
+								{#if post.kind === 'audio' && post.url}
+									<div class="mt-3 rounded-xl border border-white/[0.08] bg-white/[0.025] p-3">
+										{#if post.audioCoverUrl}<img
+												src={post.audioCoverUrl}
+												alt=""
+												class="mb-3 aspect-square max-h-56 w-full rounded-lg object-cover"
+												loading="lazy"
+											/>{/if}
+										<CommunityAudioPlayer
+											src={post.url}
+											coverUrl={post.audioCoverUrl}
+											title={post.name}
+											subtitle={`${post.handle} · ${data.community.name}`}
+										/>
+									</div>
+								{/if}
 								<CommunityPostActions
 									{post}
 									viewerUsername={data.communityUser?.username}
 									returnTo={`/r/${encodeURIComponent(data.community.slug)}`}
 								/>
+								{#if canModerateMembers}
+									<button
+										type="button"
+										onclick={() => toggleCommunityPostPin(post.id, post.isCommunityPinned ?? false)}
+										class="mt-2 text-[10px] text-white/45 transition-colors hover:text-orange-100"
+										>{post.isCommunityPinned ? 'Unpin from community' : 'Pin to community'}</button
+									>
+								{/if}
 							</div>
 						</div>
 					</article>
 				{/each}
-				{#if !data.posts.length}<p class="py-12 text-center text-sm text-white/45">
-						No posts here yet. Check back soon.
+				{#if !visiblePosts.length}<p class="py-12 text-center text-sm text-white/45">
+						{activeSection === 'News'
+							? 'No community news has been published yet.'
+							: 'No posts here yet. Check back soon.'}
 					</p>{/if}
 			</section>
 		{:else if activeSection === 'About'}
@@ -535,8 +670,55 @@
 					</a>
 				{/if}
 				<p class="mt-5 text-xs text-white/40">
-					This is a public circle for shared work, thoughtful questions, and useful references.
+					{data.community.postsPrivate
+						? 'Posts in this community are visible to members.'
+						: 'This is a public circle for shared work, thoughtful questions, and useful references.'}
 				</p>
+				<div class="mt-8 border-t border-white/[0.08] pt-5">
+					<div class="flex items-center justify-between gap-3">
+						<h2 class="font-display text-2xl">
+							Members <span class="font-body text-xs text-white/40"
+								>{data.community.memberCount}</span
+							>
+						</h2>
+						<button
+							type="button"
+							onclick={() => (activeSection = 'Members')}
+							class="text-[10px] text-orange-200/80 hover:text-orange-100">View all members</button
+						>
+					</div>
+					<ul class="mt-3 divide-y divide-white/[0.07]">
+						{#each data.members.slice(0, 5) as member (member.id)}
+							<li class="py-3">
+								<a
+									href={`/u/${encodeURIComponent(member.username)}`}
+									class="flex items-center gap-3"
+								>
+									<span
+										class="flex h-9 w-9 items-center justify-center overflow-hidden rounded-full border border-white/10 text-xs text-white"
+										style={member.avatarUrl
+											? undefined
+											: `background:${member.avatarColor ?? '#66744b'}`}
+									>
+										{#if member.avatarUrl}<img
+												src={member.avatarUrl}
+												alt=""
+												class="h-full w-full object-cover"
+											/>{:else}{member.initials ??
+												member.displayName.slice(0, 1).toUpperCase()}{/if}
+									</span>
+									<span class="min-w-0 flex-1"
+										><strong class="block truncate text-xs font-medium text-white/85"
+											>{member.displayName}</strong
+										><small class="mt-1 block text-[10px] text-white/40">@{member.username}</small
+										></span
+									>
+									<ArrowUpRight size={14} class="text-white/30" />
+								</a>
+							</li>
+						{/each}
+					</ul>
+				</div>
 			</section>
 		{:else}
 			<section class="py-5" aria-labelledby="members-heading">
@@ -799,7 +981,80 @@
 			</dialog>
 		</div>
 	{/if}
-
+	{#if communityActionsOpen}
+		<div class="fixed inset-0 z-[70] md:hidden">
+			<button
+				type="button"
+				class="absolute inset-0 h-full w-full bg-black/70"
+				onclick={() => (communityActionsOpen = false)}
+				aria-label="Close community actions"
+			></button>
+			<dialog
+				open
+				aria-modal="true"
+				aria-label="Community actions"
+				class="community-actions-sheet absolute inset-x-0 bottom-0 m-0 w-full max-w-none border border-white/10 bg-[#111211] px-5 pt-3 pb-[max(22px,env(safe-area-inset-bottom))] text-white shadow-2xl"
+			>
+				<div class="mx-auto mb-4 h-1 w-10 rounded-full bg-white/20"></div>
+				<div>
+					{#if data.communityUser}
+						<button
+							type="button"
+							onclick={toggleCommunityMute}
+							disabled={communityMuteSaving}
+							class="community-action-row"
+							><BellOff size={17} />{communityMuteSaving
+								? 'Saving…'
+								: communityMuted
+									? 'Unmute community'
+									: 'Mute community'}</button
+						>
+					{/if}
+					<button type="button" onclick={shareCommunity} class="community-action-row"
+						><Share2 size={17} />Share community</button
+					>
+					<div class="community-action-report">
+						<CommunityReportButton
+							targetType="community"
+							targetId={data.community.id}
+							targetLabel="community"
+							viewerUsername={data.communityUser?.username}
+							returnTo={`/r/${encodeURIComponent(data.community.slug)}`}
+						/>
+					</div>
+					{#if isCommunityOwner}
+						<button
+							type="button"
+							onclick={() => {
+								communityActionsOpen = false;
+								openEditor();
+							}}
+							class="community-action-row"><Pencil size={17} />Edit community</button
+						>
+						<button
+							type="button"
+							onclick={toggleCommunityChat}
+							disabled={chatSettingSaving}
+							class="community-action-row"
+							><MessageCircle size={17} />{chatSettingSaving
+								? 'Saving…'
+								: data.community.chatEnabled
+									? 'Disable community chat'
+									: 'Enable community chat'}</button
+						>
+					{/if}
+					{#if canModerateMembers}
+						<a
+							href={`/moderation?community=${encodeURIComponent(data.community.slug)}`}
+							onclick={() => (communityActionsOpen = false)}
+							class="community-action-row border-t border-white/[0.08]"
+							><Shield size={17} />Community moderation</a
+						>
+					{/if}
+				</div>
+			</dialog>
+		</div>
+	{/if}
 	<CommunityBottomNav
 		activeItem="Explore"
 		profileHref={data.communityUser ? `/u/${data.communityUser.username}` : '/login'}
@@ -821,5 +1076,45 @@
 			rgba(249, 115, 22, 0.075),
 			transparent 56%
 		);
+	}
+
+	@media (max-width: 767px) {
+		.community-actions-sheet {
+			border-right: 0;
+			border-bottom: 0;
+			border-left: 0;
+			border-radius: 20px 20px 0 0;
+		}
+
+		.community-action-row {
+			display: flex;
+			width: 100%;
+			min-height: 48px;
+			align-items: center;
+			gap: 12px;
+			border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+			padding: 0 4px;
+			color: rgba(255, 255, 255, 0.78);
+			font-size: 13px;
+			text-align: left;
+		}
+
+		.community-action-row :global(svg) {
+			color: rgba(255, 255, 255, 0.48);
+		}
+
+		.community-action-report :global(button) {
+			display: flex;
+			width: 100%;
+			min-height: 48px;
+			align-items: center;
+			gap: 12px;
+			border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+			border-radius: 0;
+			padding: 0 4px;
+			color: rgba(255, 255, 255, 0.78);
+			font-size: 13px;
+			text-align: left;
+		}
 	}
 </style>

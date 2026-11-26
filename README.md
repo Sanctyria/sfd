@@ -9,18 +9,19 @@ The Sanctyria web application is a server-rendered SvelteKit site for the public
 - A standalone Node deployment target with precompressed assets, Caddy caching headers, and reduced-data homepage media loading.
 - A privacy-choice banner gates first-party pageview aggregates and optional browser error monitoring until visitors opt in.
 - The sitemap includes only published editorial routes and user-generated pages that pass the server-side indexing policy.
-- Community feeds, profiles with customizable avatar and banner image URLs, communities, replies, notifications, and moderation.
+- Community feeds, profiles with avatar/banner uploads and badges, communities, replies with attachments, image/video/audio posts, news and pin controls, moderation, and mobile community chat.
+- Account recovery and email verification, notification preferences, blocked-profile management, and members-only community posts.
 - Global administration under `/core`, including user, community, moderation, marketing, banner, and analytics tools.
 - Server-side generated 1200 × 630 PNG social preview images for branded routes and community/profile pages.
 - Same-origin community API proxy at `/api/community/*`.
 
 The app is organized with SvelteKit route groups; group names in parentheses are not part of public URLs.
 
-| Area           | Source directory          | Public routes                                                                                                          |
-| -------------- | ------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
-| Marketing      | `src/routes/(marketing)/` | `/`, `/about`, `/journal`, `/studio`, `/donate`, and related pages                                                     |
-| Community      | `src/routes/(community)/` | `/home`, `/r/:communityName`, `/u/:username`, `/p/:postId`, `/search`, and related pages                               |
-| Administration | `src/routes/(admin)/`     | `/core`, `/core/users`, `/core/communities`, `/core/moderation`, `/core/marketing`, `/core/banners`, `/core/analytics` |
+| Area           | Source directory          | Public routes                                                                                                                                                                    |
+| -------------- | ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Marketing      | `src/routes/(marketing)/` | `/`, `/about`, `/journal`, `/studio`, `/donate`, and related pages                                                                                                               |
+| Community      | `src/routes/(community)/` | `/home`, `/r/:communityName`, `/u/:username`, `/p/:postId`, `/chats`, `/account`, `/notification-settings`, `/blocked-profiles`, `/password-reset`, `/search`, and related pages |
+| Administration | `src/routes/(admin)/`     | `/core`, `/core/users`, `/core/communities`, `/core/moderation`, `/core/marketing`, `/core/banners`, `/core/analytics`                                                           |
 
 ## Requirements
 

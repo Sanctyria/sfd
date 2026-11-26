@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { goto, invalidate } from '$app/navigation';
-	import { Flame, MessageCircle, Skull } from '@lucide/svelte';
+	import { Bookmark, Flame, MessageCircle, Share2, Skull } from '@lucide/svelte';
 	import type { CommunityPost, CommunityReply } from '../community.js';
 	import { communityApi, toCommunityReply, type ApiPage, type ApiReply } from '../communityApi.js';
 	import CommunityReportButton from './CommunityReportButton.svelte';
@@ -18,6 +18,7 @@
 	let replyCount = $state(0);
 	let reacted = $state(false);
 	let downvoted = $state(false);
+	let bookmarked = $state(false);
 	let repliesOpen = $state(false);
 	let repliesLoaded = $state(false);
 	let repliesLoading = $state(false);
@@ -25,6 +26,7 @@
 	let replyDraft = $state('');
 	let replies = $state<CommunityReply[]>([]);
 	let errorMessage = $state('');
+	let statusMessage = $state('');
 
 	$effect(() => {
 		voteCount = post.votes;
@@ -32,6 +34,7 @@
 		replyCount = post.replyCount ?? 0;
 		reacted = post.isReacted ?? false;
 		downvoted = post.isDownvoted ?? false;
+		bookmarked = post.isBookmarked ?? false;
 	});
 
 	async function setVote(direction: 'up' | 'down') {
@@ -55,6 +58,44 @@
 			downvoteCount = result.downvoteCount;
 		} catch (error) {
 			errorMessage = error instanceof Error ? error.message : 'Could not update reaction.';
+		}
+	}
+
+	async function toggleBookmark() {
+		if (!viewerUsername) {
+			void goto(`/login?returnTo=${encodeURIComponent(returnTo)}`);
+			return;
+		}
+		errorMessage = '';
+		try {
+			const result = await communityApi<{ saved: boolean }>(
+				fetch,
+				`posts/${encodeURIComponent(post.id)}/bookmark`,
+				{ method: bookmarked ? 'DELETE' : 'POST' }
+			);
+			bookmarked = result.saved;
+		} catch (error) {
+			errorMessage = error instanceof Error ? error.message : 'Could not update bookmark.';
+		}
+	}
+
+	async function sharePost() {
+		const url = `${window.location.origin}/p/${encodeURIComponent(post.id)}`;
+		errorMessage = '';
+		statusMessage = '';
+		try {
+			if (navigator.share) {
+				await navigator.share({ title: post.text || 'Sanctyria community post', url });
+				statusMessage = 'Post shared.';
+			} else if (navigator.clipboard) {
+				await navigator.clipboard.writeText(url);
+				statusMessage = 'Post link copied.';
+			} else {
+				throw new Error('Sharing is unavailable in this browser.');
+			}
+		} catch (error) {
+			if (error instanceof DOMException && error.name === 'AbortError') return;
+			errorMessage = error instanceof Error ? error.message : 'Could not share this post.';
 		}
 	}
 
@@ -110,7 +151,7 @@
 </script>
 
 <div class="mt-3 border-t border-white/[0.06] pt-2">
-	<div class="flex items-center gap-2 text-[10px] text-white/45">
+	<div class="community-post-action-bar flex items-center gap-2 text-[10px] text-white/45">
 		<button
 			type="button"
 			onclick={() => setVote('up')}
@@ -138,15 +179,36 @@
 			<MessageCircle size={13} />{replyCount}
 			{replyCount === 1 ? 'reply' : 'replies'}
 		</button>
-		<CommunityReportButton
-			targetType="post"
-			targetId={post.id}
-			targetLabel="post"
-			{viewerUsername}
-			{returnTo}
-			ownContent={viewerUsername === post.handle.slice(1)}
-		/>
+		<span class="community-post-mobile-spacer md:hidden"></span>
+		<button
+			type="button"
+			onclick={toggleBookmark}
+			aria-label={bookmarked ? 'Remove bookmark' : 'Save post'}
+			aria-pressed={bookmarked}
+			class={`community-post-mobile-action md:hidden ${bookmarked ? 'bookmarked' : ''}`}
+			><Bookmark size={18} fill={bookmarked ? 'currentColor' : 'none'} /></button
+		>
+		<button
+			type="button"
+			onclick={sharePost}
+			aria-label="Share post"
+			class="community-post-mobile-action md:hidden"><Share2 size={18} /></button
+		>
+		<span class="max-md:hidden">
+			<CommunityReportButton
+				targetType="post"
+				targetId={post.id}
+				targetLabel="post"
+				{viewerUsername}
+				{returnTo}
+				ownContent={viewerUsername === post.handle.slice(1)}
+			/>
+		</span>
 	</div>
+
+	{#if statusMessage}<p role="status" class="mt-1 text-[10px] text-white/45">
+			{statusMessage}
+		</p>{/if}
 	{#if repliesOpen}
 		<div class="mt-2 space-y-3 border-l border-white/10 pl-3">
 			{#if repliesLoading}
@@ -185,3 +247,29 @@
 	{/if}
 	{#if errorMessage}<p role="alert" class="mt-2 text-[10px] text-red-200/80">{errorMessage}</p>{/if}
 </div>
+
+<style>
+	@media (max-width: 767px) {
+		.community-post-mobile-spacer {
+			flex: 1 1 auto;
+		}
+
+		.community-post-mobile-action {
+			display: grid;
+			width: 40px;
+			height: 40px;
+			flex: 0 0 auto;
+			place-items: center;
+			border-radius: 999px;
+			color: rgba(255, 255, 255, 0.6);
+		}
+
+		.community-post-mobile-action:active {
+			background: rgba(255, 255, 255, 0.06);
+		}
+
+		.community-post-mobile-action.bookmarked {
+			color: #f0a16c;
+		}
+	}
+</style>

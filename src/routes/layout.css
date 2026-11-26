@@ -145,6 +145,11 @@ body {
 	margin-inline: auto;
 }
 
+.mobile-header-action,
+.mobile-back-icon {
+	display: none;
+}
+
 @media (min-width: 1024px) {
 	.community-route-layout:not(.community-home-layout) .community-route-body {
 		display: grid;
@@ -176,6 +181,18 @@ body {
 		position: sticky;
 	}
 
+	.community-route-layout.hide-mobile-global-header .community-route-header {
+		display: none;
+	}
+
+	.community-route-layout.mobile-video-explore .community-feed-tabs {
+		display: none;
+	}
+
+	.community-route-layout.mobile-video-explore .community-route-body {
+		min-height: 100dvh;
+	}
+
 	.community-header {
 		padding-inline: 0;
 	}
@@ -195,7 +212,23 @@ body {
 		display: none;
 	}
 
+	.community-header-brand {
+		width: 28px;
+		justify-content: center;
+	}
+
+	.mobile-back-icon {
+		display: block;
+		flex: 0 0 auto;
+		color: rgba(255, 255, 255, 0.9);
+	}
+
+	.desktop-home-mark {
+		display: none;
+	}
+
 	.community-header-search {
+		min-height: 42px;
 		padding-inline: 10px;
 	}
 
@@ -205,6 +238,17 @@ body {
 
 	.community-feed-tabs {
 		height: 42px;
+		justify-content: space-around;
+		gap: 0;
+		padding-inline: 6px;
+	}
+
+	.community-feed-tabs button {
+		flex: 1;
+		justify-content: center;
+		gap: 6px;
+		padding-inline: 3px;
+		font-size: 11px;
 	}
 
 	.community-route-body {
@@ -220,6 +264,32 @@ body {
 		min-height: 30px;
 		padding-inline: 9px;
 		font-size: 8px;
+	}
+
+	.mobile-header-action {
+		display: inline-flex;
+		width: 40px;
+		height: 40px;
+		flex: 0 0 auto;
+		align-items: center;
+		justify-content: center;
+		border: 1px solid rgba(255, 255, 255, 0.1);
+		border-radius: 999px;
+		background: rgba(255, 255, 255, 0.04);
+		color: rgba(255, 255, 255, 0.82);
+	}
+
+	.community-mobile-nav {
+		right: 3.5vw;
+		bottom: max(12px, env(safe-area-inset-bottom));
+		left: 3.5vw;
+		border-radius: 999px;
+		background: rgba(16, 17, 16, 0.94);
+		box-shadow: 0 12px 40px rgba(0, 0, 0, 0.55);
+	}
+
+	.community-route-layout.has-feed-tabs .community-route-body {
+		min-height: calc(100dvh - var(--community-header-height) - 42px);
 	}
 }
 

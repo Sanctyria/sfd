@@ -1,7 +1,10 @@
 <script lang="ts">
+	import { Check, ChevronDown, Users } from '@lucide/svelte';
+	import { onMount } from 'svelte';
+	import { page } from '$app/state';
 	import { SvelteURLSearchParams } from 'svelte/reactivity';
 	import { communityApi, type ApiPage } from '#lib/community/communityApi.js';
-	import CommunityBottomNav from '#lib/community/components/CommunityBottomNav.svelte';
+	import CommunityMobileSubheader from '#lib/community/components/CommunityMobileSubheader.svelte';
 	import type { PageProps } from './$types';
 	import type { ModerationAction, ModerationReport } from './+page.server';
 
@@ -26,7 +29,13 @@
 	let actionsLoading = $state(false);
 	let actionsLoaded = false;
 	let actionsError = $state('');
+	let selectedCommunity = $state(page.url.searchParams.get('community') ?? '');
 	const pageKey = $derived(data.items.map((report) => report.id).join(':'));
+	const managedCommunities = $derived(
+		(data.communityUser?.communities ?? []).filter(
+			(community) => community.role === 'owner' || community.role === 'moderator'
+		)
+	);
 
 	$effect(() => {
 		if (pageKey === loadedKey) return;
@@ -36,12 +45,17 @@
 		cursor = data.nextCursor;
 	});
 
-	async function loadQueue(nextStatus = status, nextCursor: string | null = null) {
+	async function loadQueue(
+		nextStatus = status,
+		nextCursor: string | null = null,
+		community = selectedCommunity
+	) {
 		loading = true;
 		loadError = '';
 		try {
 			const query = new SvelteURLSearchParams({ status: nextStatus, limit: '25' });
 			if (nextCursor) query.set('cursor', nextCursor);
+			if (community) query.set('community', community);
 			const page = await communityApi<ApiPage<ModerationReport>>(
 				fetch,
 				`moderation/reports?${query.toString()}`
@@ -56,12 +70,13 @@
 		}
 	}
 
-	async function loadAudit(nextCursor: string | null = null) {
+	async function loadAudit(nextCursor: string | null = null, community = selectedCommunity) {
 		actionsLoading = true;
 		actionsError = '';
 		try {
 			const query = new SvelteURLSearchParams({ limit: '25' });
 			if (nextCursor) query.set('cursor', nextCursor);
+			if (community) query.set('community', community);
 			const page = await communityApi<ApiPage<ModerationAction>>(
 				fetch,
 				`moderation/actions?${query.toString()}`
@@ -80,6 +95,16 @@
 		activeView = 'history';
 		if (!actionsLoaded) await loadAudit();
 	}
+
+	function changeCommunity(event: Event) {
+		selectedCommunity = (event.currentTarget as HTMLSelectElement).value;
+		if (activeView === 'reports') void loadQueue(status, null, selectedCommunity);
+		else void loadAudit(null, selectedCommunity);
+	}
+
+	onMount(() => {
+		if (selectedCommunity) void loadQueue(status, null, selectedCommunity);
+	});
 
 	function openDecision(
 		report: ModerationReport,
@@ -132,9 +157,16 @@
 </svelte:head>
 
 <main
-	class="mx-auto min-h-screen w-full max-w-5xl px-4 pt-8 pb-28 text-[#f1efe9] sm:px-8 md:pb-12 xl:px-12"
+	class="mx-auto min-h-screen w-full max-w-5xl px-4 pt-8 pb-28 text-[#f1efe9] max-md:pt-0 sm:px-8 md:pb-12 xl:px-12"
 >
-	<header class="border-b border-white/[0.08] pb-5">
+	<CommunityMobileSubheader
+		title="Community moderation"
+		backHref="/home"
+		align="left"
+		onRefresh={() => (activeView === 'reports' ? loadQueue(status) : loadAudit())}
+		refreshing={loading || actionsLoading}
+	/>
+	<header class="border-b border-white/[0.08] pb-5 max-md:hidden">
 		<p class="font-mono text-[9px] tracking-[0.15em] text-red-200/70 uppercase">Community safety</p>
 		<h1 class="mt-1 font-display text-4xl text-white">Moderation</h1>
 		<p class="mt-2 text-xs text-white/45">
@@ -142,32 +174,61 @@
 		</p>
 	</header>
 
-	<nav class="flex gap-5 border-b border-white/[0.08]" aria-label="Moderation views">
+	<nav
+		class="grid grid-cols-2 border-b border-white/[0.08] md:flex md:gap-5"
+		aria-label="Moderation views"
+	>
 		<button
 			type="button"
 			onclick={() => (activeView = 'reports')}
 			aria-current={activeView === 'reports' ? 'page' : undefined}
-			class={`border-b-2 py-3 text-xs transition-colors ${activeView === 'reports' ? 'border-orange-400 text-white' : 'border-transparent text-white/45 hover:text-white/80'}`}
+			class={`w-full border-b-2 py-3 text-xs transition-colors md:w-auto ${activeView === 'reports' ? 'border-orange-400 text-white' : 'border-transparent text-white/45 hover:text-white/80'}`}
 			>Reports</button
 		>
 		<button
 			type="button"
 			onclick={openAuditHistory}
 			aria-current={activeView === 'history' ? 'page' : undefined}
-			class={`border-b-2 py-3 text-xs transition-colors ${activeView === 'history' ? 'border-orange-400 text-white' : 'border-transparent text-white/45 hover:text-white/80'}`}
-			>Audit history</button
+			class={`w-full border-b-2 py-3 text-xs transition-colors md:w-auto ${activeView === 'history' ? 'border-orange-400 text-white' : 'border-transparent text-white/45 hover:text-white/80'}`}
+			>History</button
 		>
 	</nav>
 
+	<div class="moderation-community-filter border-b border-white/[0.08] py-3">
+		<label class="flex items-center gap-3 text-[10px] text-white/45">
+			<Users size={20} class="shrink-0 text-white/60" />
+			<span class="min-w-0 flex-1">
+				<span class="block text-[10px] text-white/45">Community</span>
+				<select
+					value={selectedCommunity}
+					onchange={changeCommunity}
+					class="moderation-community-select mt-1 block w-full max-w-[220px] bg-transparent text-sm text-white/90"
+					aria-label="Filter moderation by community"
+				>
+					<option value="">All communities</option>
+					{#each managedCommunities as community (community.slug)}
+						<option value={community.slug}>{community.name}</option>
+					{/each}
+				</select>
+			</span>
+			<ChevronDown size={18} class="shrink-0 text-white/65" />
+		</label>
+		{#if loading || actionsLoading}<span class="text-[10px] text-orange-100/70">Refreshing…</span
+			>{/if}
+	</div>
+
 	{#if activeView === 'reports'}
-		<nav class="flex gap-5 border-b border-white/[0.08]" aria-label="Report status filter">
+		<nav
+			class="moderation-status-filters flex gap-2 overflow-x-auto border-b border-white/[0.08] py-3 md:gap-5"
+			aria-label="Report status filter"
+		>
 			{#each statuses as filter (filter)}
 				<button
 					type="button"
 					onclick={() => loadQueue(filter)}
 					aria-current={status === filter ? 'page' : undefined}
-					class={`border-b-2 py-3 text-xs capitalize transition-colors ${status === filter ? 'border-orange-400 text-white' : 'border-transparent text-white/45 hover:text-white/80'}`}
-					>{filter}</button
+					class={`moderation-status-pill inline-flex min-h-10 shrink-0 items-center gap-2 rounded-full border px-4 text-xs capitalize transition-colors md:min-h-0 md:rounded-none md:border-0 md:border-b-2 md:px-0 md:py-3 ${status === filter ? 'border-orange-200/30 bg-[#704b3e] text-white md:border-orange-400 md:bg-transparent' : 'border-white/10 bg-white/[0.02] text-white/55 hover:text-white/80 md:border-transparent md:bg-transparent'}`}
+					>{#if status === filter}<Check size={14} class="md:hidden" />{/if}{filter}</button
 				>
 			{/each}
 		</nav>
@@ -385,8 +446,20 @@
 	</div>
 {/if}
 
-<CommunityBottomNav
-	activeItem="Home"
-	profileHref={data.communityUser ? `/u/${data.communityUser.username}` : '/login'}
-	user={data.communityUser}
-/>
+<style>
+	@media (max-width: 767px) {
+		.moderation-community-select {
+			max-width: none;
+			appearance: none;
+		}
+
+		.moderation-community-select option {
+			background: #111211;
+			color: #fff;
+		}
+
+		.moderation-community-filter label {
+			min-height: 58px;
+		}
+	}
+</style>

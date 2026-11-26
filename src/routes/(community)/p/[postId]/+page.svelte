@@ -9,6 +9,7 @@
 		Globe,
 		MessageCircle,
 		MoreHorizontal,
+		Music2,
 		Pencil,
 		Skull,
 		Share2,
@@ -34,11 +35,15 @@
 	import CommunityLinkPreview from '#lib/community/components/CommunityLinkPreview.svelte';
 	import CommunityReplyBadges from '#lib/community/components/CommunityReplyBadges.svelte';
 	import CommunityReportButton from '#lib/community/components/CommunityReportButton.svelte';
+	import CommunityAudioPlayer from '#lib/community/components/CommunityAudioPlayer.svelte';
+	import CommunityPostShareSheet from '#lib/community/components/CommunityPostShareSheet.svelte';
+	import CommunityVideoPreview from '#lib/community/components/CommunityVideoPreview.svelte';
 	import { subscribeCommunityRealtime } from '#lib/community/communityRealtime.js';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
 	let toast = $state('');
+	let shareSheetOpen = $state(false);
 	let reacted = $state(false);
 	let downvoted = $state(false);
 	let saved = $state(false);
@@ -153,6 +158,10 @@
 	});
 
 	function sharePost() {
+		if (window.matchMedia('(max-width: 767px)').matches) {
+			shareSheetOpen = true;
+			return;
+		}
 		if (navigator.clipboard) {
 			navigator.clipboard.writeText(postUrl).then(
 				() => showToast('Post link copied'),
@@ -442,15 +451,10 @@
 						{@const embedUrl = videoEmbedUrl(data.post.url)}
 						{#if embedUrl}
 							<div class="community-video mt-4 overflow-hidden border border-white/[0.08] bg-black">
-								<iframe
-									src={embedUrl}
-									title={`Video shared by ${data.post.name}`}
-									loading="lazy"
-									referrerpolicy="strict-origin-when-cross-origin"
-									allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-									allowfullscreen
-									class="aspect-video w-full"
-								></iframe>
+								<CommunityVideoPreview
+									url={data.post.url}
+									title={data.post.text || `Video shared by ${data.post.name}`}
+								/>
 							</div>
 						{:else}
 							<a
@@ -461,6 +465,24 @@
 								><Globe size={14} /> Open video link</a
 							>
 						{/if}
+					{/if}
+					{#if data.post.kind === 'audio' && data.post.url}
+						<div class="mt-4 rounded-xl border border-white/[0.08] bg-white/[0.025] p-3">
+							{#if data.post.audioCoverUrl}<img
+									src={data.post.audioCoverUrl}
+									alt=""
+									class="mb-3 aspect-square max-h-72 w-full rounded-lg object-cover"
+								/>{/if}
+							<div class="mb-2 flex items-center gap-2 text-xs text-white/55">
+								<Music2 size={14} class="text-orange-200" />Audio post
+							</div>
+							<CommunityAudioPlayer
+								src={data.post.url}
+								coverUrl={data.post.audioCoverUrl}
+								title={data.post.name}
+								subtitle={`${data.post.handle} · ${data.post.community}`}
+							/>
+						</div>
 					{/if}
 
 					<div
@@ -499,7 +521,7 @@
 							type="button"
 							onclick={sharePost}
 							class="flex h-9 w-8 shrink-0 items-center justify-center rounded-full text-white/45 hover:bg-white/[0.05] hover:text-white"
-							aria-label="Copy post link"><Share2 size={14} /></button
+							aria-label="Share post"><Share2 size={14} /></button
 						>
 						{#if data.post.canManage}
 							<details class="relative">
@@ -764,6 +786,14 @@
 		profileHref={data.communityUser ? `/u/${data.communityUser.username}` : '/login'}
 		user={data.communityUser}
 	/>
+	{#if shareSheetOpen}
+		<CommunityPostShareSheet
+			postId={data.post.id}
+			communities={data.communityUser?.communities ?? []}
+			onClose={() => (shareSheetOpen = false)}
+			onToast={showToast}
+		/>
+	{/if}
 	{#if toast}<div
 			role="status"
 			class="fixed right-4 bottom-20 z-50 border border-white/10 bg-[#1b1d1b] px-4 py-2.5 text-xs text-white/85 shadow-xl"

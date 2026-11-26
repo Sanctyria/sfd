@@ -1,9 +1,20 @@
 <script lang="ts">
 	import { ArrowUpRight, MessageCircle, UsersRound } from '@lucide/svelte';
 	import CommunityFollowButton from '#lib/community/components/CommunityFollowButton.svelte';
+	import CommunityBottomNav from '#lib/community/components/CommunityBottomNav.svelte';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
+	let activeCategory = $state<'posts' | 'people' | 'communities'>('posts');
+	const categories = $derived<{ id: typeof activeCategory; label: string; count: number }[]>([
+		{ id: 'posts', label: 'Posts', count: data.results.posts.length },
+		{ id: 'people', label: 'People', count: data.results.members.length },
+		{ id: 'communities', label: 'Communities', count: data.results.communities.length }
+	]);
+
+	$effect(() => {
+		if (data.query.length >= 2) activeCategory = 'posts';
+	});
 </script>
 
 <svelte:head>
@@ -22,6 +33,19 @@
 			<p class="search-summary">Search for people, communities, and conversations.</p>
 		{/if}
 	</header>
+	{#if data.query.length >= 2}
+		<div class="search-category-tabs" role="tablist" aria-label="Search result categories">
+			{#each categories as category (category.id)}
+				<button
+					type="button"
+					role="tab"
+					aria-selected={activeCategory === category.id}
+					class:active={activeCategory === category.id}
+					onclick={() => (activeCategory = category.id)}>{category.label}</button
+				>
+			{/each}
+		</div>
+	{/if}
 
 	{#if data.query.length < 2}
 		<div class="search-empty">
@@ -31,7 +55,11 @@
 		</div>
 	{:else}
 		{#if data.results.members.length}
-			<section class="search-section" aria-labelledby="search-members-heading">
+			<section
+				class="search-section"
+				class:search-section-mobile-hidden={activeCategory !== 'people'}
+				aria-labelledby="search-members-heading"
+			>
 				<div class="search-section-heading">
 					<h2 id="search-members-heading">People</h2>
 					<span>{data.results.members.length} matches</span>
@@ -63,7 +91,11 @@
 		{/if}
 
 		{#if data.results.communities.length}
-			<section class="search-section" aria-labelledby="search-communities-heading">
+			<section
+				class="search-section"
+				class:search-section-mobile-hidden={activeCategory !== 'communities'}
+				aria-labelledby="search-communities-heading"
+			>
 				<div class="search-section-heading">
 					<h2 id="search-communities-heading">Communities</h2>
 					<span>{data.results.communities.length} matches</span>
@@ -91,7 +123,11 @@
 		{/if}
 
 		{#if data.results.posts.length}
-			<section class="search-section" aria-labelledby="search-posts-heading">
+			<section
+				class="search-section"
+				class:search-section-mobile-hidden={activeCategory !== 'posts'}
+				aria-labelledby="search-posts-heading"
+			>
 				<div class="search-section-heading">
 					<h2 id="search-posts-heading">Posts</h2>
 					<span>{data.results.posts.length} matches</span>
@@ -109,17 +145,19 @@
 								{#if post.community.avatarUrl}<img
 										src={post.community.avatarUrl}
 										alt=""
-										class="h-6 w-6 rounded-full object-cover"
+										class="h-6 w-6 rounded-full object-cover max-md:hidden"
 									/>{/if}
 								<span class="search-post-byline">
 									<a href={`/u/${encodeURIComponent(post.author.username)}`}
 										>{post.author.displayName} · @{post.author.username}</a
 									>
-									<CommunityFollowButton
-										authorUsername={post.author.username}
-										viewerUsername={data.communityUser?.username}
-										initialFollowing={post.author.isFollowing}
-									/>
+									<span class="max-md:hidden">
+										<CommunityFollowButton
+											authorUsername={post.author.username}
+											viewerUsername={data.communityUser?.username}
+											initialFollowing={post.author.isFollowing}
+										/>
+									</span>
 								</span>
 								<a class="search-post-body" href={`/p/${encodeURIComponent(post.id)}`}
 									>{post.body}</a
@@ -135,7 +173,11 @@
 				</div>
 			</section>
 		{/if}
-
+		{#if (data.results.members.length || data.results.communities.length || data.results.posts.length) && ((activeCategory === 'posts' && !data.results.posts.length) || (activeCategory === 'people' && !data.results.members.length) || (activeCategory === 'communities' && !data.results.communities.length))}
+			<div class="search-category-empty">
+				No {activeCategory} match “{data.query}”.
+			</div>
+		{/if}
 		{#if !data.results.members.length && !data.results.communities.length && !data.results.posts.length}
 			<div class="search-empty">
 				<span><UsersRound size={18} /></span>
@@ -145,6 +187,12 @@
 		{/if}
 	{/if}
 </main>
+
+<CommunityBottomNav
+	activeItem="Profile"
+	profileHref={data.communityUser ? `/u/${data.communityUser.username}` : '/login'}
+	user={data.communityUser}
+/>
 
 <style>
 	.search-page {
@@ -368,5 +416,102 @@
 		margin-top: 6px;
 		color: rgba(235, 235, 227, 0.45);
 		font-size: 10px;
+	}
+
+	.search-category-tabs {
+		display: none;
+		grid-template-columns: repeat(3, minmax(0, 1fr));
+		margin-inline: calc(clamp(16px, 4vw, 36px) * -1);
+		border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+	}
+
+	.search-category-tabs button {
+		position: relative;
+		min-height: 60px;
+		color: rgba(235, 235, 227, 0.55);
+		font-size: 11px;
+	}
+
+	.search-category-tabs button.active {
+		color: rgba(255, 255, 255, 0.9);
+	}
+
+	.search-category-tabs button.active::after {
+		position: absolute;
+		right: 28%;
+		bottom: -1px;
+		left: 28%;
+		height: 3px;
+		border-radius: 999px 999px 0 0;
+		background: #f97316;
+		content: '';
+	}
+
+	.search-category-empty {
+		display: none;
+		margin-top: 22px;
+		padding: 28px 8px;
+		color: rgba(235, 235, 227, 0.5);
+		font-size: 12px;
+		text-align: center;
+	}
+
+	@media (max-width: 767px) {
+		.search-page {
+			min-height: calc(100dvh - 54px);
+			padding-top: 35px;
+			padding-bottom: 110px;
+		}
+
+		.search-category-tabs {
+			display: grid;
+			margin-top: 25px;
+		}
+
+		.search-category-empty {
+			display: block;
+		}
+
+		.search-section-mobile-hidden {
+			display: none;
+		}
+
+		.search-section {
+			margin-top: 19px;
+		}
+
+		.search-section-heading h2 {
+			font-size: 21px;
+		}
+
+		.search-section-heading > span {
+			font-size: 10px;
+		}
+
+		.search-result-list {
+			border-radius: 10px;
+		}
+
+		.search-post {
+			min-height: 84px;
+			gap: 12px;
+			padding: 14px 12px;
+		}
+
+		.search-post-icon {
+			width: 42px;
+			height: 42px;
+			border-radius: 9px;
+			background: rgba(240, 161, 108, 0.08);
+		}
+
+		.search-result-copy strong {
+			font-size: 11px;
+		}
+
+		.search-post-byline > a,
+		.search-post-body {
+			font-size: 10px;
+		}
 	}
 </style>

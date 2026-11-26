@@ -11,7 +11,9 @@
 	const tabs: FeedTab[] = ['Following', 'Community', 'Explore'];
 
 	function selectTab(tab: FeedTab) {
-		void goto(`/home?feed=${tab.toLowerCase()}`);
+		void goto(
+			tab === 'Explore' ? '/home?feed=explore&view=communities' : `/home?feed=${tab.toLowerCase()}`
+		);
 	}
 </script>
 

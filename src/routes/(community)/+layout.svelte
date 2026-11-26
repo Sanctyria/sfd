@@ -9,8 +9,27 @@
 	let { children, data }: LayoutProps = $props();
 	let sidebarCollapsed = $state(false);
 	let notificationsOpen = $state(false);
+	const isMobileVideoExplore = $derived(
+		page.url.pathname === '/home' &&
+			page.url.searchParams.get('feed') === 'explore' &&
+			page.url.searchParams.get('view') !== 'communities'
+	);
 	const showFeedTabs = $derived(Boolean(data.communityUser && page.url.pathname === '/home'));
 	const showGlobalRightRail = $derived(page.url.pathname !== '/home');
+	const hideMobileGlobalHeader = $derived(
+		[
+			'/account',
+			'/blocked-profiles',
+			'/chats',
+			'/login',
+			'/moderation',
+			'/notification-settings',
+			'/password-reset',
+			'/signup'
+		].includes(page.url.pathname) ||
+			/^\/chats\/[^/]+$/.test(page.url.pathname) ||
+			isMobileVideoExplore
+	);
 	const activeTab = $derived(
 		data.communityUser
 			? page.url.searchParams.get('feed') === 'explore'
@@ -30,6 +49,8 @@
 	class:has-community-user={Boolean(data.communityUser)}
 	class:has-feed-tabs={showFeedTabs}
 	class:community-home-layout={!showGlobalRightRail}
+	class:hide-mobile-global-header={hideMobileGlobalHeader}
+	class:mobile-video-explore={isMobileVideoExplore}
 >
 	<CommunitySidebar
 		bind:collapsed={sidebarCollapsed}

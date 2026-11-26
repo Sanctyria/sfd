@@ -10,6 +10,8 @@ export interface ApiProfile {
 	initials: string | null;
 	avatarColor: string | null;
 	ember: number;
+	activityStreak: number;
+	bestActivityStreak: number;
 	verified: boolean;
 	indexingOptedIn?: boolean;
 	indexable?: boolean;
@@ -21,6 +23,7 @@ export interface ApiProfile {
 	isBlockedBy?: boolean;
 	isMuted?: boolean;
 	communities: { slug: string; name: string; avatarUrl?: string | null }[];
+	badges?: string[];
 }
 
 export interface ApiProfileConnection {
@@ -46,6 +49,9 @@ export interface ApiCommunity {
 	avatarUrl?: string | null;
 	bannerUrl?: string | null;
 	websiteUrl?: string | null;
+	postsPrivate?: boolean;
+	chatEnabled?: boolean;
+	notificationsMuted?: boolean;
 	indexable?: boolean;
 	memberCount: number;
 	activeEmber?: number;
@@ -107,6 +113,8 @@ export interface ApiReply {
 	id: string;
 	parentReplyId: string | null;
 	body: string;
+	mediaUrl?: string | null;
+	mediaKind?: 'image_url' | 'video_url' | null;
 	createdAt: string;
 	removed?: boolean;
 	canManage?: boolean;
@@ -132,9 +140,13 @@ export interface ApiAuthor {
 
 export interface ApiPost {
 	id: string;
-	kind: 'text' | 'link' | 'image_url' | 'video_url';
+	kind: 'text' | 'link' | 'image_url' | 'video_url' | 'audio_url';
 	body: string;
 	url: string | null;
+	audioCoverUrl?: string | null;
+	isNews?: boolean;
+	isProfilePinned?: boolean;
+	isCommunityPinned?: boolean;
 	linkTitle: string | null;
 	linkDescription: string | null;
 	linkDomain: string | null;
@@ -251,6 +263,8 @@ export function toCommunityReply(reply: ApiReply): CommunityReply {
 		isCommunityOwner: reply.isCommunityOwner ?? false,
 		isCommunityModerator: reply.isCommunityModerator ?? false,
 		text: reply.body,
+		mediaUrl: reply.mediaUrl ?? null,
+		mediaKind: reply.mediaKind ?? null,
 		reactionCount: reply.reactionCount ?? 0,
 		reacted: reply.reacted ?? false
 	};
@@ -273,7 +287,14 @@ export function toCommunityPost(post: ApiPost, joinedSlugs: string[] = []): Comm
 		communityColor: '#f97316',
 		postedAt: age.label,
 		minutesAgo: age.minutes,
-		kind: post.kind === 'image_url' ? 'image' : post.kind === 'video_url' ? 'video' : post.kind,
+		kind:
+			post.kind === 'image_url'
+				? 'image'
+				: post.kind === 'video_url'
+					? 'video'
+					: post.kind === 'audio_url'
+						? 'audio'
+						: post.kind,
 		text: post.body,
 		url: post.url ?? undefined,
 		linkTitle: post.linkTitle ?? undefined,
@@ -287,6 +308,10 @@ export function toCommunityPost(post: ApiPost, joinedSlugs: string[] = []): Comm
 		isBookmarked: post.isBookmarked ?? false,
 		canManage: post.canManage ?? false,
 		indexable: post.indexable ?? false,
+		isNews: post.isNews ?? false,
+		isProfilePinned: post.isProfilePinned ?? false,
+		isCommunityPinned: post.isCommunityPinned ?? false,
+		audioCoverUrl: post.audioCoverUrl ?? null,
 		replies: post.replies?.map(toCommunityReply) ?? [],
 		joinedCommunity: joinedSlugs.includes(post.community.slug)
 	};

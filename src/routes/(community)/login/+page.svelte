@@ -8,6 +8,8 @@
 	<meta name="robots" content="noindex, nofollow" />
 </svelte:head>
 
-<main class="grid min-h-[calc(100dvh-62px)] place-items-center px-4 py-8 sm:px-6 md:px-8">
+<main
+	class="grid min-h-[100dvh] place-items-center px-0 py-0 sm:px-6 sm:py-8 md:min-h-[calc(100dvh-62px)] md:px-8"
+>
 	<CommunityAuthCard mode="login" />
 </main>

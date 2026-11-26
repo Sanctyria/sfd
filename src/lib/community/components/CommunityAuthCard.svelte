@@ -88,9 +88,10 @@
 		submitting = true;
 		try {
 			const endpoint = isSignup ? 'signup' : 'login';
+			const verification = turnstileToken ? { turnstileToken } : {};
 			const payload = isSignup
-				? { username, displayName, password, turnstileToken }
-				: { username, password, turnstileToken };
+				? { username, displayName, password, ...verification }
+				: { username, password, ...verification };
 			const response = await fetch(`/api/community/auth/${endpoint}`, {
 				method: 'POST',
 				credentials: 'same-origin',
@@ -147,7 +148,9 @@
 	}
 </script>
 
-<section class="mx-auto w-full max-w-md border border-white/10 bg-[#111211] p-5 shadow-2xl sm:p-8">
+<section
+	class="community-auth-card mx-auto w-full max-w-md border border-white/10 bg-[#111211] p-5 shadow-2xl sm:p-8"
+>
 	<a
 		href="/home"
 		class="mb-8 inline-flex items-center gap-2 text-white/80"
@@ -156,6 +159,18 @@
 		<img src="/assets/dlst.gif" alt="" class="h-8 w-8 object-contain" />
 		<span class="font-display text-xl">Sanctyria</span>
 	</a>
+	<nav class="community-auth-tabs" aria-label="Account access">
+		<a
+			href={`/login?returnTo=${encodeURIComponent(returnTo)}`}
+			aria-current={!isSignup ? 'page' : undefined}
+			class:active={!isSignup}>Sign in</a
+		>
+		<a
+			href={`/signup?returnTo=${encodeURIComponent(returnTo)}`}
+			aria-current={isSignup ? 'page' : undefined}
+			class:active={isSignup}>Create account</a
+		>
+	</nav>
 	<div class="mb-6">
 		<p
 			class="flex items-center gap-2 font-mono text-[9px] tracking-[0.14em] text-orange-200/70 uppercase"
@@ -200,7 +215,9 @@
 		</label>
 		<label class="block">
 			<span class="mb-1.5 block text-[11px] text-white/65">Password</span>
-			<span class="flex border border-white/10 bg-black/20 focus-within:border-orange-200/50">
+			<span
+				class="community-auth-password flex border border-white/10 bg-black/20 focus-within:border-orange-200/50"
+			>
 				<input
 					bind:value={password}
 					type={passwordVisible ? 'text' : 'password'}
@@ -220,6 +237,14 @@
 				>
 			</span>
 		</label>
+		{#if !isSignup}
+			<a
+				href="/password-reset"
+				class="block text-right text-xs text-orange-200/80 hover:text-orange-100"
+			>
+				Forgot password?
+			</a>
+		{/if}
 		{#if isSignup}
 			<label class="block">
 				<span class="mb-1.5 block text-[11px] text-white/65">Confirm password</span>
@@ -272,9 +297,78 @@
 </section>
 
 <style>
+	.community-auth-tabs {
+		display: none;
+	}
+
 	@media (prefers-reduced-motion: no-preference) {
 		section {
 			animation: auth-arrive 260ms ease-out both;
+		}
+
+		@media (max-width: 767px) {
+			.community-auth-card {
+				display: flex;
+				width: 100%;
+				min-height: 100dvh;
+				max-width: none;
+				flex-direction: column;
+				justify-content: center;
+				border: 0;
+				background: #090a0a;
+				padding: max(24px, env(safe-area-inset-top)) 24px max(24px, env(safe-area-inset-bottom));
+				box-shadow: none;
+			}
+
+			.community-auth-card > a {
+				margin-bottom: 30px;
+			}
+
+			.community-auth-tabs {
+				display: grid;
+				grid-template-columns: repeat(2, minmax(0, 1fr));
+				margin-bottom: 28px;
+				border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+			}
+
+			.community-auth-tabs a {
+				border-bottom: 2px solid transparent;
+				padding: 12px 4px;
+				color: rgba(255, 255, 255, 0.45);
+				font-size: 12px;
+				text-align: center;
+				text-decoration: none;
+			}
+
+			.community-auth-tabs a.active {
+				border-color: #ed6a36;
+				color: #fff;
+			}
+
+			.community-auth-card form input:not([type='checkbox']) {
+				border-color: transparent;
+				border-bottom-color: rgba(255, 255, 255, 0.18);
+				background: rgba(255, 255, 255, 0.025);
+				padding: 14px 12px;
+			}
+
+			.community-auth-card .community-auth-password {
+				border-color: transparent;
+				border-bottom: 1px solid rgba(255, 255, 255, 0.18);
+				background: rgba(255, 255, 255, 0.025);
+			}
+
+			.community-auth-card .community-auth-password input {
+				border: 0;
+				background: transparent;
+			}
+
+			.community-auth-card form button[type='submit'] {
+				min-height: 50px;
+				border-radius: 999px;
+				background: #ed6a36;
+				color: #1a100b;
+			}
 		}
 	}
 

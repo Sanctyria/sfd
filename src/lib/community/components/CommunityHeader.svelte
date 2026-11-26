@@ -1,6 +1,19 @@
 <script lang="ts">
 	import { goto, invalidateAll } from '$app/navigation';
-	import { Bell, LogOut, Search, UserRound, X } from '@lucide/svelte';
+	import {
+		ArrowLeft,
+		Bell,
+		Bookmark,
+		Compass,
+		Flame,
+		LogOut,
+		Menu,
+		MessageSquare,
+		Search,
+		UserRound,
+		UserRoundX,
+		X
+	} from '@lucide/svelte';
 	import { page } from '$app/state';
 	import {
 		communityApi,
@@ -32,7 +45,12 @@
 	let accountMenuOpen = $state(false);
 	let signingOut = $state(false);
 	let accountError = $state('');
+	let mobileNavigationOpen = $state(false);
 	let searchInput = $state<HTMLInputElement>();
+	const isHome = $derived(page.url.pathname === '/home');
+	const isMobileMenuPage = $derived(
+		page.url.pathname === '/search' || page.url.pathname === '/saved'
+	);
 
 	$effect(() => {
 		previewItems = notifications;
@@ -43,6 +61,14 @@
 		event.preventDefault();
 		const query = searchInput?.value.trim() ?? '';
 		void goto(query ? `/search?q=${encodeURIComponent(query)}` : '/search');
+	}
+
+	function handleNotificationsClick() {
+		if (window.matchMedia('(max-width: 767px)').matches) {
+			void goto('/notifications');
+			return;
+		}
+		void toggleNotifications();
 	}
 
 	async function toggleNotifications() {
@@ -134,19 +160,37 @@
 	}
 </script>
 
-<header class="community-header border-b border-white/[0.07] bg-[#090a0a]/95 backdrop-blur-xl">
+<header
+	class="community-header border-b border-white/[0.07] bg-[#090a0a]/95 backdrop-blur-xl"
+	class:mobile-menu-page={isMobileMenuPage}
+>
 	<div class="community-header-main flex items-center gap-4 px-4 sm:px-6">
 		<a
 			href="/home"
 			class="community-header-brand flex w-[200px] shrink-0 items-center gap-2"
 			aria-label="Sanctyria Community home"
 		>
-			<img src="/assets/dlst.gif" alt="" class="h-7 w-7 object-contain" />
+			{#if isHome}
+				<img src="/assets/dlst.gif" alt="" class="h-7 w-7 object-contain" />
+			{:else}
+				<ArrowLeft size={22} class="mobile-back-icon" />
+				<img src="/assets/dlst.gif" alt="" class="desktop-home-mark h-7 w-7 object-contain" />
+			{/if}
 			<span class="font-display text-[22px] leading-none">Sanctyria</span>
 			<span class="hidden font-mono text-[9px] tracking-[0.14em] text-white/35 uppercase lg:inline"
 				>Community</span
 			>
 		</a>
+		{#if isMobileMenuPage}
+			<button
+				type="button"
+				onclick={() => (mobileNavigationOpen = true)}
+				aria-label="Open community navigation"
+				aria-expanded={mobileNavigationOpen}
+				aria-controls="mobile-community-navigation"
+				class="mobile-menu-trigger"><Menu size={23} strokeWidth={2} /></button
+			>
+		{/if}
 
 		<form
 			class="community-header-search mx-auto flex max-w-xl min-w-0 flex-1 items-center gap-2 rounded-full border border-white/[0.08] bg-white/[0.06] px-4 py-2"
@@ -166,18 +210,29 @@
 
 		{#if communityUser}
 			<div class="community-header-actions ml-auto flex shrink-0 items-center gap-2">
+				<a
+					href="/chats"
+					class="mobile-header-action"
+					aria-label="Community chats"
+					title="Community chats"><MessageSquare size={19} /></a
+				>
 				<button
 					type="button"
-					onclick={toggleNotifications}
+					onclick={handleNotificationsClick}
 					class="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/5 text-white/70 transition-colors hover:bg-white/10 hover:text-white"
 					aria-label="Notifications"
 					aria-expanded={notificationsOpen}
 					aria-controls="community-notification-preview"
 				>
 					<Bell size={16} />
-					{#if previewUnreadCount > 0}<span
-							class="absolute top-1 right-1 h-1.5 w-1.5 rounded-full bg-orange-400"
-						></span>{/if}
+					{#if previewUnreadCount > 0}
+						<span
+							class="absolute top-1 right-1 h-1.5 w-1.5 rounded-full bg-orange-400 max-md:hidden"
+						></span>
+						<span class="mobile-notification-count md:hidden"
+							>{previewUnreadCount > 99 ? '99+' : previewUnreadCount}</span
+						>
+					{/if}
 				</button>
 				<button
 					type="button"
@@ -185,7 +240,7 @@
 						accountMenuOpen = !accountMenuOpen;
 						notificationsOpen = false;
 					}}
-					class="shrink-0 border border-white/10 px-3 py-2 text-[11px] text-white/65 transition-colors hover:border-white/25 hover:text-white"
+					class="community-account-trigger shrink-0 border border-white/10 px-3 py-2 text-[11px] text-white/65 transition-colors hover:border-white/25 hover:text-white"
 					aria-label="Account menu"
 					aria-expanded={accountMenuOpen}
 					aria-controls="community-account-menu"
@@ -201,6 +256,91 @@
 		{/if}
 	</div>
 </header>
+
+{#if mobileNavigationOpen}
+	<div class="mobile-navigation-overlay fixed inset-0 z-[80] md:hidden">
+		<button
+			type="button"
+			class="absolute inset-0 h-full w-full bg-black/70"
+			onclick={() => (mobileNavigationOpen = false)}
+			aria-label="Close community navigation"
+		></button>
+		<div
+			id="mobile-community-navigation"
+			role="dialog"
+			aria-modal="true"
+			aria-label="Community navigation"
+			class="mobile-navigation-drawer absolute inset-y-0 left-0 flex w-[min(84vw,340px)] flex-col border-r border-white/10 bg-[#101110] px-5 pt-[max(18px,env(safe-area-inset-top))] pb-[max(18px,env(safe-area-inset-bottom))] text-white shadow-2xl"
+		>
+			<div class="flex items-center justify-between border-b border-white/[0.08] pb-4">
+				<a
+					href="/home"
+					onclick={() => (mobileNavigationOpen = false)}
+					class="flex items-center gap-2 font-display text-xl"
+				>
+					<img src="/assets/dlst.gif" alt="" class="h-7 w-7 object-contain" />
+					Sanctyria
+				</a>
+				<button
+					type="button"
+					onclick={() => (mobileNavigationOpen = false)}
+					aria-label="Close community navigation"
+					class="grid h-9 w-9 place-items-center rounded-full text-white/60"><X size={18} /></button
+				>
+			</div>
+			<nav class="mt-4 grid gap-1" aria-label="Community pages">
+				<a
+					href="/home"
+					onclick={() => (mobileNavigationOpen = false)}
+					class="mobile-navigation-link"><Flame size={17} />Home</a
+				>
+				<a
+					href="/home?feed=explore&view=communities"
+					onclick={() => (mobileNavigationOpen = false)}
+					class="mobile-navigation-link"><Compass size={17} />Explore communities</a
+				>
+				<a
+					href="/search"
+					onclick={() => (mobileNavigationOpen = false)}
+					class="mobile-navigation-link"><Search size={17} />Search</a
+				>
+				<a
+					href="/notifications"
+					onclick={() => (mobileNavigationOpen = false)}
+					class="mobile-navigation-link"><Bell size={17} />Notifications</a
+				>
+				<a
+					href="/saved"
+					onclick={() => (mobileNavigationOpen = false)}
+					class="mobile-navigation-link"><Bookmark size={17} />Saved posts</a
+				>
+				{#if communityUser}
+					<a
+						href="/chats"
+						onclick={() => (mobileNavigationOpen = false)}
+						class="mobile-navigation-link"><MessageSquare size={17} />Community chats</a
+					>
+					<a
+						href={`/u/${encodeURIComponent(communityUser.username)}`}
+						onclick={() => (mobileNavigationOpen = false)}
+						class="mobile-navigation-link"><UserRound size={17} />Profile and settings</a
+					>
+					<a
+						href="/blocked-profiles"
+						onclick={() => (mobileNavigationOpen = false)}
+						class="mobile-navigation-link"><UserRoundX size={17} />Blocked profiles</a
+					>
+				{:else}
+					<a
+						href="/login"
+						onclick={() => (mobileNavigationOpen = false)}
+						class="mobile-navigation-link"><UserRound size={17} />Sign in</a
+					>
+				{/if}
+			</nav>
+		</div>
+	</div>
+{/if}
 
 {#if accountMenuOpen && communityUser}
 	<button
@@ -222,6 +362,18 @@
 			onclick={() => (accountMenuOpen = false)}
 			class="mt-2 flex items-center gap-2.5 px-2 py-2.5 text-xs text-white/65 transition-colors hover:bg-white/[0.05] hover:text-white"
 			><UserRound size={14} />Profile and settings</a
+		>
+		<a
+			href="/account"
+			onclick={() => (accountMenuOpen = false)}
+			class="flex items-center gap-2.5 px-2 py-2.5 text-xs text-white/65 transition-colors hover:bg-white/[0.05] hover:text-white"
+			>Account email</a
+		>
+		<a
+			href="/notification-settings"
+			onclick={() => (accountMenuOpen = false)}
+			class="flex items-center gap-2.5 px-2 py-2.5 text-xs text-white/65 transition-colors hover:bg-white/[0.05] hover:text-white"
+			>Notification settings</a
 		>
 		{#if accountError}<p class="px-2 py-1 text-[10px] text-red-300" role="alert">
 				{accountError}
@@ -289,3 +441,66 @@
 		>
 	</div>
 {/if}
+
+<style>
+	.mobile-menu-trigger {
+		display: none;
+	}
+
+	.mobile-notification-count {
+		position: absolute;
+		top: -4px;
+		right: -4px;
+		display: grid;
+		min-width: 20px;
+		height: 20px;
+		place-items: center;
+		border-radius: 999px;
+		background: #f97316;
+		padding-inline: 4px;
+		color: #17110e;
+		font-size: 9px;
+		font-weight: 700;
+	}
+
+	.mobile-navigation-drawer {
+		max-height: 100dvh;
+		overflow-y: auto;
+	}
+
+	.mobile-navigation-link {
+		display: flex;
+		min-height: 48px;
+		align-items: center;
+		gap: 12px;
+		border-radius: 10px;
+		padding: 0 12px;
+		color: rgba(255, 255, 255, 0.72);
+		font-size: 13px;
+	}
+
+	.mobile-navigation-link:active,
+	.mobile-navigation-link:hover {
+		background: rgba(255, 255, 255, 0.06);
+		color: white;
+	}
+
+	@media (max-width: 767px) {
+		.community-header.mobile-menu-page .community-header-brand {
+			display: none;
+		}
+
+		.community-header.mobile-menu-page .community-account-trigger {
+			display: none;
+		}
+
+		.community-header.mobile-menu-page .mobile-menu-trigger {
+			display: grid;
+			width: 28px;
+			height: 40px;
+			flex: 0 0 auto;
+			place-items: center;
+			color: rgba(255, 255, 255, 0.9);
+		}
+	}
+</style>

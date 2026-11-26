@@ -1,12 +1,17 @@
 <script lang="ts">
-	import { goto, invalidate } from '$app/navigation';
+	import { goto, invalidate, invalidateAll } from '$app/navigation';
 	import {
 		BadgeCheck,
 		Bookmark,
 		Flame,
+		LogOut,
+		Mail,
 		MessageCircle,
+		MoreHorizontal,
+		Pin,
 		Pencil,
 		Share2,
+		Sparkles,
 		ShieldCheck,
 		VolumeX,
 		X,
@@ -25,11 +30,24 @@
 	import CommunityFollowButton from '#lib/community/components/CommunityFollowButton.svelte';
 	import CommunityLinkPreview from '#lib/community/components/CommunityLinkPreview.svelte';
 	import CommunityPostActions from '#lib/community/components/CommunityPostActions.svelte';
+	import CommunityAudioPlayer from '#lib/community/components/CommunityAudioPlayer.svelte';
+	import CommunityPostOptionsSheet from '#lib/community/components/CommunityPostOptionsSheet.svelte';
+	import CommunityVideoPreview from '#lib/community/components/CommunityVideoPreview.svelte';
+	import { uploadCommunityMedia } from '#lib/community/communityMedia.js';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
 	let activeSection = $state('Posts');
 	let toast = $state('');
+	let postOptionsPost = $state<CommunityPost | null>(null);
+	let editingPost = $state<CommunityPost | null>(null);
+	let editPostText = $state('');
+	let editPostUrl = $state('');
+	let editPostError = $state('');
+	let editPostSaving = $state(false);
+	let deletedPostIds = $state<string[]>([]);
+	let profileActionsOpen = $state(false);
+	let signingOut = $state(false);
 	let additionalPosts = $state<CommunityPost[]>([]);
 	let additionalReplies = $state<ApiProfileReply[]>([]);
 	let nextPostsCursor = $state<string | null>(null);
@@ -46,12 +64,31 @@
 	});
 	let profileEditError = $state('');
 	let profileSaving = $state(false);
+	let profileMediaUploading = $state(false);
+	let cropDraft = $state<{
+		purpose: 'profile-avatar' | 'profile-banner';
+		file: File;
+		previewUrl: string;
+		scale: number;
+		rotation: number;
+		offsetX: number;
+		offsetY: number;
+	} | null>(null);
+	let cropDragOrigin: {
+		pointerId: number;
+		x: number;
+		y: number;
+		offsetX: number;
+		offsetY: number;
+	} | null = null;
 	let safetyActionLoading = $state(false);
 	let connectionsKind = $state<'followers' | 'following' | null>(null);
 	let connections = $state<ApiProfileConnection[]>([]);
 	let connectionsCursor = $state<string | null>(null);
 	let connectionsLoading = $state(false);
-	const allPosts = $derived([...data.posts, ...additionalPosts]);
+	const allPosts = $derived(
+		[...data.posts, ...additionalPosts].filter((post) => !deletedPostIds.includes(post.id))
+	);
 	const allReplies = $derived([...data.replies, ...additionalReplies]);
 	const visibleCommunities = $derived(data.profile.communities.slice(0, 3));
 	const additionalCommunityCount = $derived(
@@ -155,15 +192,101 @@
 		window.setTimeout(() => (toast = ''), 2200);
 	}
 
+	function openProfilePostEditor(post: CommunityPost) {
+		if (!post.canManage) return;
+		editingPost = post;
+		editPostText = post.text;
+		editPostUrl = post.url ?? '';
+		editPostError = '';
+	}
+
+	async function saveProfilePost(event: SubmitEvent) {
+		event.preventDefault();
+		if (!editingPost || editPostSaving) return;
+		editPostSaving = true;
+		editPostError = '';
+		try {
+			await communityApi(fetch, `posts/${encodeURIComponent(editingPost.id)}`, {
+				method: 'PATCH',
+				body: JSON.stringify({
+					body: editPostText.trim(),
+					...(editingPost.kind !== 'text' ? { url: editPostUrl.trim() } : {})
+				})
+			});
+			editingPost = null;
+			await invalidate('app:community-content');
+			showToast('Post updated.');
+		} catch (error) {
+			editPostError = error instanceof Error ? error.message : 'Could not update post.';
+		} finally {
+			editPostSaving = false;
+		}
+	}
+
+	async function deleteProfilePost(post: CommunityPost) {
+		if (
+			!post.canManage ||
+			!window.confirm('Delete this post? It will no longer be visible in the community.')
+		)
+			return;
+		try {
+			await communityApi(fetch, `posts/${encodeURIComponent(post.id)}`, { method: 'DELETE' });
+			deletedPostIds = [...new Set([...deletedPostIds, post.id])];
+			await invalidate('app:community-content');
+			showToast('Post deleted.');
+		} catch (error) {
+			showToast(error instanceof Error ? error.message : 'Could not delete post.');
+		}
+	}
+
+	async function toggleProfilePostPin(post: CommunityPost) {
+		if (!data.profile.isOwnProfile || post.handle !== `@${data.profile.username}`) return;
+		try {
+			await communityApi<{ pinned: boolean }>(
+				fetch,
+				`posts/${encodeURIComponent(post.id)}/pin/profile`,
+				{ method: post.isProfilePinned ? 'DELETE' : 'POST' }
+			);
+			await invalidate('app:community-content');
+			showToast(
+				post.isProfilePinned ? 'Post unpinned from your profile.' : 'Post pinned to your profile.'
+			);
+		} catch (error) {
+			showToast(error instanceof Error ? error.message : 'Could not update profile pin.');
+		}
+	}
+
 	function shareProfile() {
 		const url = `${window.location.origin}/u/${encodeURIComponent(data.profile.username)}`;
-		if (navigator.clipboard) {
+		if (navigator.share) {
+			navigator
+				.share({ title: `${data.profile.name} on Sanctyria`, url })
+				.catch((error: unknown) => {
+					if (!(error instanceof DOMException && error.name === 'AbortError')) {
+						showToast(error instanceof Error ? error.message : 'Could not share this profile.');
+					}
+				});
+		} else if (navigator.clipboard) {
 			navigator.clipboard.writeText(url).then(
 				() => showToast('Profile link copied'),
 				() => showToast(url)
 			);
 		} else {
 			showToast(url);
+		}
+	}
+
+	async function signOut() {
+		if (signingOut) return;
+		signingOut = true;
+		try {
+			await communityApi(fetch, 'auth/session', { method: 'DELETE' });
+			await invalidateAll();
+			await goto('/home');
+		} catch (error) {
+			showToast(error instanceof Error ? error.message : 'Could not sign out.');
+		} finally {
+			signingOut = false;
 		}
 	}
 
@@ -181,6 +304,7 @@
 
 	async function saveProfile(event: SubmitEvent) {
 		event.preventDefault();
+		if (profileMediaUploading) return;
 		profileEditError = '';
 		profileSaving = true;
 		try {
@@ -202,6 +326,153 @@
 		} finally {
 			profileSaving = false;
 		}
+	}
+
+	async function uploadProfileImage(event: Event, purpose: 'profile-avatar' | 'profile-banner') {
+		const input = event.currentTarget;
+		if (!(input instanceof HTMLInputElement) || !input.files?.[0]) return;
+		const file = input.files[0];
+		if (window.matchMedia('(max-width: 767px)').matches) {
+			if (cropDraft) URL.revokeObjectURL(cropDraft.previewUrl);
+			cropDraft = {
+				purpose,
+				file,
+				previewUrl: URL.createObjectURL(file),
+				scale: 1,
+				rotation: 0,
+				offsetX: 0,
+				offsetY: 0
+			};
+			input.value = '';
+			return;
+		}
+		profileMediaUploading = true;
+		profileEditError = '';
+		try {
+			const url = await uploadCommunityMedia(file, purpose);
+			profileDraft = {
+				...profileDraft,
+				...(purpose === 'profile-avatar' ? { avatarUrl: url } : { bannerUrl: url })
+			};
+		} catch (error) {
+			profileEditError = error instanceof Error ? error.message : 'Could not upload this image.';
+		} finally {
+			profileMediaUploading = false;
+		}
+	}
+
+	async function applyProfileCrop() {
+		if (!cropDraft || profileMediaUploading) return;
+		const draft = cropDraft;
+		profileMediaUploading = true;
+		profileEditError = '';
+		try {
+			const image = new Image();
+			image.src = draft.previewUrl;
+			await image.decode();
+			const canvas = document.createElement('canvas');
+			const isAvatar = draft.purpose === 'profile-avatar';
+			canvas.width = isAvatar ? 640 : 1600;
+			canvas.height = isAvatar ? 640 : 500;
+			const context = canvas.getContext('2d');
+			if (!context) throw new Error('Image cropping is unavailable in this browser.');
+
+			const radians = (draft.rotation * Math.PI) / 180;
+			const rotatedWidth =
+				Math.abs(image.width * Math.cos(radians)) + Math.abs(image.height * Math.sin(radians));
+			const rotatedHeight =
+				Math.abs(image.width * Math.sin(radians)) + Math.abs(image.height * Math.cos(radians));
+			const scale =
+				Math.max(canvas.width / rotatedWidth, canvas.height / rotatedHeight) * draft.scale;
+			context.translate(
+				canvas.width / 2 + draft.offsetX * canvas.width,
+				canvas.height / 2 + draft.offsetY * canvas.height
+			);
+			context.rotate(radians);
+			context.drawImage(
+				image,
+				(-image.width * scale) / 2,
+				(-image.height * scale) / 2,
+				image.width * scale,
+				image.height * scale
+			);
+			const blob = await new Promise<Blob>((resolve, reject) => {
+				canvas.toBlob(
+					(result) => (result ? resolve(result) : reject(new Error('Could not crop this image.'))),
+					'image/jpeg',
+					0.9
+				);
+			});
+			const file = new File([blob], `${draft.purpose}.jpg`, { type: 'image/jpeg' });
+			const url = await uploadCommunityMedia(file, draft.purpose);
+			profileDraft = {
+				...profileDraft,
+				...(draft.purpose === 'profile-avatar' ? { avatarUrl: url } : { bannerUrl: url })
+			};
+			URL.revokeObjectURL(draft.previewUrl);
+			cropDraft = null;
+		} catch (error) {
+			profileEditError = error instanceof Error ? error.message : 'Could not crop this image.';
+		} finally {
+			profileMediaUploading = false;
+		}
+	}
+
+	function closeProfileCrop() {
+		if (cropDraft) URL.revokeObjectURL(cropDraft.previewUrl);
+		cropDraft = null;
+		cropDragOrigin = null;
+	}
+
+	function startCropDrag(event: PointerEvent) {
+		if (!cropDraft) return;
+		const target = event.currentTarget;
+		if (!(target instanceof HTMLElement)) return;
+		target.setPointerCapture(event.pointerId);
+		cropDragOrigin = {
+			pointerId: event.pointerId,
+			x: event.clientX,
+			y: event.clientY,
+			offsetX: cropDraft.offsetX,
+			offsetY: cropDraft.offsetY
+		};
+	}
+
+	function moveCropDrag(event: PointerEvent) {
+		if (!cropDraft || !cropDragOrigin || cropDragOrigin.pointerId !== event.pointerId) return;
+		const target = event.currentTarget;
+		if (!(target instanceof HTMLElement)) return;
+		const bounds = target.getBoundingClientRect();
+		cropDraft.offsetX = Math.max(
+			-0.8,
+			Math.min(0.8, cropDragOrigin.offsetX + (event.clientX - cropDragOrigin.x) / bounds.width)
+		);
+		cropDraft.offsetY = Math.max(
+			-0.8,
+			Math.min(0.8, cropDragOrigin.offsetY + (event.clientY - cropDragOrigin.y) / bounds.height)
+		);
+	}
+
+	function endCropDrag() {
+		cropDragOrigin = null;
+	}
+
+	function profileBadgeLabel(badge: string): string {
+		const labels: Record<string, string> = {
+			verified: 'Verified',
+			staff: 'Sanctyria staff',
+			community_creator: 'Community creator',
+			early_supporter: 'Early supporter',
+			beta_tester: 'Beta tester'
+		};
+		return labels[badge] ?? badge.replaceAll('_', ' ');
+	}
+
+	function profileBadgeIcon(badge: string) {
+		if (badge === 'verified') return BadgeCheck;
+		if (badge === 'staff') return ShieldCheck;
+		if (badge === 'community_creator') return Flame;
+		return Sparkles;
 	}
 
 	async function openConnections(kind: 'followers' | 'following') {
@@ -300,7 +571,7 @@
 					</div>
 				</div>
 				{#if data.profile.isOwnProfile}
-					<div class="mb-1 flex items-center gap-2">
+					<div class="mb-1 hidden items-center gap-2 md:flex">
 						<button
 							type="button"
 							onclick={shareProfile}
@@ -332,6 +603,16 @@
 							title="Edit profile"
 							class="flex h-9 w-9 items-center justify-center border border-white/20 text-white transition-colors hover:border-orange-200/50 hover:text-orange-100"
 							><Pencil size={16} /></button
+						>
+					</div>
+					<div class="mb-1 md:hidden">
+						<button
+							type="button"
+							onclick={() => (profileActionsOpen = true)}
+							aria-label="Profile actions"
+							aria-expanded={profileActionsOpen}
+							class="grid h-9 w-9 place-items-center rounded-full border border-white/15 text-white/75"
+							><MoreHorizontal size={18} /></button
 						>
 					</div>
 				{:else}
@@ -381,6 +662,45 @@
 			</div>
 			<div class="mt-4 px-2">
 				<p class="max-w-xl text-sm leading-6 text-white/70">{data.profile.bio}</p>
+				{#if data.profile.badges.length}
+					<div class="mt-3 flex flex-wrap gap-2" aria-label="Profile badges">
+						{#each data.profile.badges as badge (badge)}
+							{@const BadgeIcon = profileBadgeIcon(badge)}
+							<span
+								class="community-profile-badge"
+								data-badge={badge}
+								title={profileBadgeLabel(badge)}
+								aria-label={profileBadgeLabel(badge)}
+							>
+								<BadgeIcon class="community-profile-badge-icon" size={13} strokeWidth={2} />
+								<span class="community-profile-badge-label">{profileBadgeLabel(badge)}</span>
+							</span>
+						{/each}
+					</div>
+				{/if}
+				<div class="community-profile-streak-card md:hidden">
+					<div class="community-profile-streak-item">
+						<span class="community-profile-streak-icon"><Flame size={17} /></span>
+						<span>
+							<small>Current streak</small>
+							<strong
+								>{data.profile.activityStreak}
+								{data.profile.activityStreak === 1 ? 'day' : 'days'}</strong
+							>
+						</span>
+					</div>
+					<div class="community-profile-streak-divider"></div>
+					<div class="community-profile-streak-item">
+						<span class="community-profile-streak-icon best"><Sparkles size={16} /></span>
+						<span>
+							<small>Best streak</small>
+							<strong
+								>{data.profile.bestActivityStreak}
+								{data.profile.bestActivityStreak === 1 ? 'day' : 'days'}</strong
+							>
+						</span>
+					</div>
+				</div>
 				<div class="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-[10px] text-white/40">
 					<span>{data.profile.joined}</span>
 					<button
@@ -439,7 +759,9 @@
 		{#if activeSection === 'Posts' || activeSection === 'Media'}
 			{@const profilePosts =
 				activeSection === 'Media'
-					? allPosts.filter((post) => post.kind === 'image' || post.kind === 'video')
+					? allPosts.filter(
+							(post) => post.kind === 'image' || post.kind === 'video' || post.kind === 'audio'
+						)
 					: allPosts}
 			{#if profilePosts.length}
 				<section
@@ -447,7 +769,7 @@
 					class="divide-y divide-white/[0.08]"
 				>
 					{#each profilePosts as post (post.id)}
-						<article class="py-5">
+						<article class="profile-post-card py-5">
 							<div class="flex items-start gap-2 sm:gap-3">
 								<a
 									href={`/u/${encodeURIComponent(data.profile.username)}`}
@@ -474,28 +796,61 @@
 												class="text-sky-300"
 												aria-label="Verified"
 											/>{/if}
-										<CommunityFollowButton
-											authorUsername={data.profile.username}
-											viewerUsername={data.communityUser?.username}
-											initialFollowing={data.profile.isFollowing}
-										/>
-										<span class="text-white/35">{post.postedAt}</span>
-									</div>
-									<a
-										href={`/r/${post.communitySlug ?? communitySlug(post.community)}`}
-										class="mt-1 inline-flex items-center gap-1.5 text-[10px] text-white/45 hover:text-orange-100"
-									>
-										<span
-											class="flex h-4 w-4 items-center justify-center overflow-hidden rounded-full border border-white/10"
-											style={`color:${post.communityColor};background:${post.communityColor}12`}
+										<span class="max-md:hidden">
+											<CommunityFollowButton
+												authorUsername={data.profile.username}
+												viewerUsername={data.communityUser?.username}
+												initialFollowing={data.profile.isFollowing}
+											/>
+										</span>
+										<a
+											href={`/u/${encodeURIComponent(data.profile.username)}`}
+											class="profile-post-mobile-byline md:hidden"
+											>@{data.profile.username} · {post.postedAt}</a
 										>
-											{#if post.communityAvatarUrl}<img
-													src={post.communityAvatarUrl}
-													alt=""
-													class="h-full w-full object-cover"
-												/>{:else}<Flame size={9} />{/if}
-										</span>{post.community}</a
-									>
+										<span class="text-white/35 max-md:hidden">{post.postedAt}</span>
+									</div>
+									<div class="profile-post-community-row">
+										<a
+											href={`/r/${post.communitySlug ?? communitySlug(post.community)}`}
+											class="mt-1 inline-flex min-w-0 items-center gap-1.5 text-[10px] text-white/45 hover:text-orange-100"
+										>
+											<span
+												class="flex h-4 w-4 shrink-0 items-center justify-center overflow-hidden rounded-full border border-white/10"
+												style={`color:${post.communityColor};background:${post.communityColor}12`}
+											>
+												{#if post.communityAvatarUrl}<img
+														src={post.communityAvatarUrl}
+														alt=""
+														class="h-full w-full object-cover"
+													/>{:else}<Flame size={9} />{/if}
+											</span><span class="truncate">{post.community}</span></a
+										>
+										<div class="profile-post-mobile-options md:hidden">
+											<button
+												type="button"
+												onclick={() => (postOptionsPost = post)}
+												aria-label="Post options"
+												aria-expanded={postOptionsPost?.id === post.id}
+												class="profile-post-icon-button"><MoreHorizontal size={20} /></button
+											>
+											{#if data.profile.isOwnProfile && post.handle === `@${data.profile.username}`}
+												<button
+													type="button"
+													onclick={() => toggleProfilePostPin(post)}
+													aria-label={post.isProfilePinned
+														? 'Unpin post from profile'
+														: 'Pin post to profile'}
+													aria-pressed={post.isProfilePinned}
+													class={`profile-post-icon-button ${post.isProfilePinned ? 'pinned' : ''}`}
+													><Pin
+														size={20}
+														fill={post.isProfilePinned ? 'currentColor' : 'none'}
+													/></button
+												>
+											{/if}
+										</div>
+									</div>
 									<a
 										href={`/p/${encodeURIComponent(post.id)}`}
 										class="mt-3 block text-[13px] leading-[1.7] whitespace-pre-wrap text-white/80 hover:text-white"
@@ -522,15 +877,10 @@
 											<div
 												class="community-video mt-3 overflow-hidden border border-white/[0.08] bg-black"
 											>
-												<iframe
-													src={embedUrl}
-													title={`Video shared by ${data.profile.name}`}
-													loading="lazy"
-													referrerpolicy="strict-origin-when-cross-origin"
-													allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-													allowfullscreen
-													class="aspect-video w-full"
-												></iframe>
+												<CommunityVideoPreview
+													url={post.url}
+													title={post.text || `Video shared by ${data.profile.name}`}
+												/>
 											</div>
 										{:else}
 											<a
@@ -541,6 +891,21 @@
 												>Open video link</a
 											>
 										{/if}
+									{:else if post.kind === 'audio' && post.url}
+										<div class="mt-3 rounded-xl border border-white/[0.08] bg-white/[0.025] p-3">
+											{#if post.audioCoverUrl}<img
+													src={post.audioCoverUrl}
+													alt=""
+													class="mb-3 aspect-square max-h-56 w-full rounded-lg object-cover"
+													loading="lazy"
+												/>{/if}
+											<CommunityAudioPlayer
+												src={post.url}
+												coverUrl={post.audioCoverUrl}
+												title={post.name}
+												subtitle={`${post.handle} · ${post.community}`}
+											/>
+										</div>
 									{:else if post.kind === 'link' && post.url}
 										<CommunityLinkPreview
 											url={post.url}
@@ -578,7 +943,7 @@
 					<h2 class="mt-4 font-display text-2xl">No {activeSection.toLowerCase()} yet</h2>
 					<p class="mx-auto mt-2 max-w-sm text-xs leading-5 text-white/45">
 						{activeSection === 'Media'
-							? 'Image and video posts from this profile will appear here.'
+							? 'Image, video, and audio posts from this profile will appear here.'
 							: 'Posts shared by this profile will appear here.'}
 					</p>
 					{#if activeSection === 'Media' && nextPostsCursor}<button
@@ -635,11 +1000,13 @@
 		{/if}
 	</main>
 	{#if editOpen}
-		<div class="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4">
+		<div
+			class="community-profile-editor-overlay fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4"
+		>
 			<dialog
 				open
 				aria-labelledby="edit-profile-heading"
-				class="fixed inset-0 m-auto max-h-[min(88vh,760px)] w-full max-w-xl overflow-y-auto border border-white/10 bg-[#111211] p-5 text-white shadow-2xl sm:p-7"
+				class="community-profile-editor-dialog fixed inset-0 m-auto max-h-[min(88vh,760px)] w-full max-w-xl overflow-y-auto border border-white/10 bg-[#111211] p-5 text-white shadow-2xl sm:p-7"
 			>
 				<header class="flex items-start justify-between gap-4 border-b border-white/[0.08] pb-5">
 					<div>
@@ -751,8 +1118,18 @@
 							class="mt-1.5 w-full border border-white/10 bg-black/20 px-3 py-2.5 text-sm text-white outline-none placeholder:text-white/25 focus:border-orange-200/40"
 						/>
 						<span class="mt-1 block text-[10px] text-white/35">
-							Use a secure HTTPS image address. Leave blank to use your initials.
+							Use a secure HTTPS image address or upload an image. Leave blank to use your initials.
 						</span>
+					</label>
+					<label class="block text-xs text-white/65">
+						Upload avatar
+						<input
+							type="file"
+							accept="image/jpeg,image/png,image/webp,image/gif"
+							onchange={(event) => uploadProfileImage(event, 'profile-avatar')}
+							disabled={profileMediaUploading}
+							class="mt-2 w-full text-xs text-white/55 file:mr-3 file:rounded-full file:border-0 file:bg-white/10 file:px-4 file:py-2 file:text-xs file:text-white"
+						/>
 					</label>
 					<label class="block text-xs text-white/65">
 						Profile banner image URL
@@ -764,9 +1141,23 @@
 							class="mt-1.5 w-full border border-white/10 bg-black/20 px-3 py-2.5 text-sm text-white outline-none placeholder:text-white/25 focus:border-orange-200/40"
 						/>
 						<span class="mt-1 block text-[10px] text-white/35">
-							Use a secure HTTPS image address. Leave blank to remove your banner.
+							Use a secure HTTPS image address or upload an image. Leave blank to remove your
+							banner.
 						</span>
 					</label>
+					<label class="block text-xs text-white/65">
+						Upload banner
+						<input
+							type="file"
+							accept="image/jpeg,image/png,image/webp,image/gif"
+							onchange={(event) => uploadProfileImage(event, 'profile-banner')}
+							disabled={profileMediaUploading}
+							class="mt-2 w-full text-xs text-white/55 file:mr-3 file:rounded-full file:border-0 file:bg-white/10 file:px-4 file:py-2 file:text-xs file:text-white"
+						/>
+					</label>
+					{#if profileMediaUploading}<p role="status" class="text-xs text-orange-200/75">
+							Uploading image…
+						</p>{/if}
 					{#if profileEditError}<p
 							role="alert"
 							class="border border-red-300/15 bg-red-300/[0.04] px-3 py-2.5 text-xs text-red-200"
@@ -782,13 +1173,97 @@
 						>
 						<button
 							type="submit"
-							disabled={profileSaving}
+							disabled={profileSaving || profileMediaUploading}
 							class="bg-orange-300 px-4 py-2 text-xs font-semibold text-[#17110e] hover:bg-orange-200 disabled:opacity-50"
 							>{profileSaving ? 'Saving...' : 'Save changes'}</button
 						>
 					</div>
 				</form>
 			</dialog>
+		</div>
+	{/if}
+	{#if cropDraft}
+		<div
+			class="community-profile-crop-overlay"
+			role="dialog"
+			aria-modal="true"
+			aria-labelledby="crop-heading"
+		>
+			<header class="flex items-center justify-between border-b border-white/10 pb-4">
+				<button
+					type="button"
+					onclick={closeProfileCrop}
+					disabled={profileMediaUploading}
+					aria-label="Cancel image crop"
+					class="grid h-10 w-10 place-items-center rounded-full text-white/65 hover:bg-white/5"
+					><X size={19} /></button
+				>
+				<h2 id="crop-heading" class="font-display text-xl">
+					{cropDraft.purpose === 'profile-avatar' ? 'Crop profile photo' : 'Crop profile banner'}
+				</h2>
+				<span class="w-10"></span>
+			</header>
+			<div
+				class="community-profile-crop-preview"
+				class:banner={cropDraft.purpose === 'profile-banner'}
+				onpointerdown={startCropDrag}
+				onpointermove={moveCropDrag}
+				onpointerup={endCropDrag}
+				onpointercancel={endCropDrag}
+				role="application"
+				aria-label="Drag image to adjust crop"
+			>
+				<img
+					src={cropDraft.previewUrl}
+					alt=""
+					style={`transform: translate(${cropDraft.offsetX * 100}%, ${cropDraft.offsetY * 100}%) rotate(${cropDraft.rotation}deg) scale(${cropDraft.scale})`}
+				/>
+			</div>
+			<div class="mx-auto mt-7 w-full max-w-sm">
+				<label class="block text-xs text-white/70">
+					Zoom
+					<input
+						type="range"
+						min="1"
+						max="3"
+						step="0.05"
+						value={cropDraft.scale}
+						oninput={(event) => {
+							if (cropDraft) cropDraft.scale = Number(event.currentTarget.value);
+						}}
+						class="mt-3 w-full accent-orange-300"
+					/>
+				</label>
+				<div class="mt-5 flex items-center justify-center gap-3">
+					<button
+						type="button"
+						onclick={() => {
+							if (cropDraft) cropDraft.rotation = (cropDraft.rotation + 270) % 360;
+						}}
+						class="rounded-full border border-white/15 px-4 py-2.5 text-xs text-white/75"
+						>Rotate left</button
+					>
+					<button
+						type="button"
+						onclick={() => {
+							if (cropDraft) cropDraft.rotation = (cropDraft.rotation + 90) % 360;
+						}}
+						class="rounded-full border border-white/15 px-4 py-2.5 text-xs text-white/75"
+						>Rotate right</button
+					>
+				</div>
+			</div>
+			{#if profileEditError}<p role="alert" class="mt-5 text-center text-xs text-red-200">
+					{profileEditError}
+				</p>{/if}
+			<button
+				type="button"
+				onclick={applyProfileCrop}
+				disabled={profileMediaUploading}
+				class="mt-auto w-full rounded-full bg-orange-300 px-5 py-3.5 text-sm font-semibold text-[#17110e] disabled:opacity-50"
+			>
+				{profileMediaUploading ? 'Uploading…' : 'Use this photo'}
+			</button>
 		</div>
 	{/if}
 	{#if connectionsKind}
@@ -861,6 +1336,150 @@
 		</div>
 	{/if}
 
+	{#if profileActionsOpen}
+		<div class="fixed inset-0 z-[70] md:hidden">
+			<button
+				type="button"
+				class="absolute inset-0 h-full w-full bg-black/70"
+				onclick={() => (profileActionsOpen = false)}
+				aria-label="Close profile actions"
+			></button>
+			<dialog
+				open
+				aria-modal="true"
+				aria-label="Profile actions"
+				class="profile-actions-sheet absolute inset-x-0 bottom-0 m-0 w-full max-w-none border border-white/10 bg-[#111211] px-5 pt-3 pb-[max(22px,env(safe-area-inset-bottom))] text-white shadow-2xl"
+			>
+				<div class="mx-auto mb-4 h-1 w-10 rounded-full bg-white/20"></div>
+				<div>
+					<button
+						type="button"
+						onclick={() => {
+							profileActionsOpen = false;
+							shareProfile();
+						}}
+						class="profile-action-row"><Share2 size={17} />Share profile</button
+					>
+					<a href="/saved" onclick={() => (profileActionsOpen = false)} class="profile-action-row"
+						><Bookmark size={17} />Saved</a
+					>
+					<button
+						type="button"
+						onclick={() => {
+							profileActionsOpen = false;
+							openProfileEditor();
+						}}
+						class="profile-action-row"><Pencil size={17} />Edit profile</button
+					>
+					<a href="/account" onclick={() => (profileActionsOpen = false)} class="profile-action-row"
+						><Mail size={17} />Account email</a
+					>
+					<a
+						href="/blocked-profiles"
+						onclick={() => (profileActionsOpen = false)}
+						class="profile-action-row"><UserRoundX size={17} />Blocked profiles</a
+					>
+					{#if data.communityUser?.isAdmin}
+						<a href="/core" onclick={() => (profileActionsOpen = false)} class="profile-action-row"
+							><ShieldCheck size={17} />Sanctyria Core</a
+						>
+					{/if}
+					<button
+						type="button"
+						onclick={signOut}
+						disabled={signingOut}
+						class="profile-action-row border-t border-white/[0.08] text-red-200/80 disabled:opacity-50"
+						><LogOut size={17} />{signingOut ? 'Signing out…' : 'Sign out'}</button
+					>
+				</div>
+			</dialog>
+		</div>
+	{/if}
+	{#if postOptionsPost}
+		{@const selectedPost = postOptionsPost}
+		<CommunityPostOptionsSheet
+			post={selectedPost}
+			viewerUsername={data.communityUser?.username}
+			returnTo={`/u/${encodeURIComponent(data.profile.username)}`}
+			onClose={() => (postOptionsPost = null)}
+			onEdit={() => openProfilePostEditor(selectedPost)}
+			onDelete={() => deleteProfilePost(selectedPost)}
+			onToast={showToast}
+		/>
+	{/if}
+	{#if editingPost}
+		<div class="fixed inset-0 z-[90] flex items-end justify-center bg-black/75 md:hidden">
+			<dialog
+				open
+				aria-labelledby="profile-edit-post-heading"
+				class="profile-post-edit-sheet absolute inset-x-0 bottom-0 m-0 w-full max-w-none border border-white/10 bg-[#111211] px-5 pt-4 pb-[max(22px,env(safe-area-inset-bottom))] text-white shadow-2xl"
+			>
+				<div class="mx-auto mb-4 h-1 w-10 rounded-full bg-white/20"></div>
+				<div class="flex items-start justify-between gap-4">
+					<div>
+						<p class="font-mono text-[9px] tracking-[0.12em] text-orange-200/70 uppercase">
+							Post settings
+						</p>
+						<h2 id="profile-edit-post-heading" class="mt-1 font-display text-2xl">Edit post</h2>
+					</div>
+					<button
+						type="button"
+						onclick={() => (editingPost = null)}
+						aria-label="Close post editor"
+						class="grid h-9 w-9 place-items-center text-white/60 hover:bg-white/5 hover:text-white"
+						><X size={17} /></button
+					>
+				</div>
+				<form onsubmit={saveProfilePost} class="mt-5 space-y-4">
+					<label class="block text-xs text-white/65">
+						Post text
+						<textarea
+							bind:value={editPostText}
+							maxlength="1000"
+							rows="5"
+							required={editingPost.kind === 'text'}
+							class="mt-1.5 w-full resize-y border border-white/10 bg-black/20 px-3 py-2.5 text-sm leading-5 text-white outline-none focus:border-orange-200/40"
+						></textarea>
+					</label>
+					{#if editingPost.kind !== 'text'}
+						<label class="block text-xs text-white/65">
+							HTTPS media or resource URL
+							<input
+								bind:value={editPostUrl}
+								type="url"
+								inputmode="url"
+								required
+								placeholder="https://"
+								class="mt-1.5 w-full border border-white/10 bg-black/20 px-3 py-2.5 text-sm text-white outline-none placeholder:text-white/25 focus:border-orange-200/40"
+							/>
+						</label>
+					{/if}
+					{#if editPostError}
+						<p
+							role="alert"
+							class="border border-red-300/15 bg-red-300/[0.04] px-3 py-2.5 text-xs text-red-200"
+						>
+							{editPostError}
+						</p>
+					{/if}
+					<div class="flex justify-end gap-2 border-t border-white/[0.08] pt-4">
+						<button
+							type="button"
+							onclick={() => (editingPost = null)}
+							class="border border-white/15 px-4 py-2 text-xs text-white/70 hover:text-white"
+							>Cancel</button
+						>
+						<button
+							type="submit"
+							disabled={editPostSaving}
+							class="bg-orange-200 px-4 py-2 text-xs font-semibold text-[#21160e] hover:bg-orange-100 disabled:opacity-50"
+							>{editPostSaving ? 'Saving...' : 'Save changes'}</button
+						>
+					</div>
+				</form>
+			</dialog>
+		</div>
+	{/if}
 	<CommunityBottomNav
 		activeItem="Profile"
 		profileHref={data.communityUser ? `/u/${data.communityUser.username}` : '/login'}
@@ -875,6 +1494,133 @@
 </div>
 
 <style>
+	.community-profile-editor-overlay {
+		display: flex;
+	}
+
+	.community-profile-badge {
+		display: inline-flex;
+		align-items: center;
+		border: 1px solid rgba(255, 215, 187, 0.2);
+		border-radius: 999px;
+		background: rgba(255, 215, 187, 0.04);
+		padding: 4px 10px;
+		color: rgba(255, 215, 187, 0.8);
+		font-size: 9px;
+	}
+
+	.community-profile-badge-icon,
+	.community-profile-badge[data-badge='verified'] {
+		display: none;
+	}
+
+	.community-profile-crop-overlay {
+		display: none;
+	}
+
+	@media (max-width: 767px) {
+		.community-profile-editor-overlay {
+			display: block;
+			overflow-y: auto;
+			background: #090a0a;
+			padding: 0;
+		}
+
+		.community-profile-editor-dialog {
+			position: static;
+			display: block;
+			width: 100%;
+			max-width: none;
+			max-height: none;
+			min-height: 100dvh;
+			margin: 0;
+			border: 0;
+			padding: max(18px, env(safe-area-inset-top)) 18px max(24px, env(safe-area-inset-bottom));
+		}
+
+		.community-profile-editor-dialog > header {
+			position: sticky;
+			z-index: 1;
+			top: calc(-1 * max(18px, env(safe-area-inset-top)));
+			margin: calc(-1 * max(18px, env(safe-area-inset-top))) -18px 0;
+			background: #111211;
+			padding: max(18px, env(safe-area-inset-top)) 18px 14px;
+		}
+
+		.community-profile-editor-dialog form > div:last-child {
+			position: sticky;
+			bottom: 0;
+			background: #111211;
+			padding-bottom: max(12px, env(safe-area-inset-bottom));
+		}
+
+		.community-profile-badge {
+			display: grid;
+			width: 34px;
+			height: 34px;
+			place-items: center;
+			border-color: rgba(242, 160, 119, 0.25);
+			background: rgba(242, 160, 119, 0.06);
+			padding: 0;
+			color: rgba(255, 215, 187, 0.88);
+		}
+
+		.community-profile-badge-icon {
+			display: inline-flex;
+		}
+
+		.community-profile-badge-label {
+			display: none;
+		}
+
+		.community-profile-badge[data-badge='verified'] {
+			display: inline-flex;
+			align-items: center;
+			justify-content: center;
+		}
+
+		.community-profile-crop-overlay {
+			position: fixed;
+			z-index: 75;
+			inset: 0;
+			display: flex;
+			flex-direction: column;
+			background: #090a0a;
+			padding: max(18px, env(safe-area-inset-top)) 20px max(22px, env(safe-area-inset-bottom));
+			color: #f1efe9;
+		}
+
+		.community-profile-crop-preview {
+			display: grid;
+			width: min(78vw, 340px);
+			aspect-ratio: 1;
+			place-items: center;
+			overflow: hidden;
+			margin: 36px auto 0;
+			border: 1px solid rgba(255, 255, 255, 0.2);
+			border-radius: 50%;
+			background: #171817;
+			touch-action: none;
+			cursor: grab;
+		}
+
+		.community-profile-crop-preview:active {
+			cursor: grabbing;
+		}
+
+		.community-profile-crop-preview.banner {
+			width: 100%;
+			aspect-ratio: 16 / 5;
+			border-radius: 12px;
+		}
+
+		.community-profile-crop-preview img {
+			width: 100%;
+			height: 100%;
+			object-fit: cover;
+		}
+	}
+
 	.community-profile-page {
 		min-height: 100dvh;
 		background-image: radial-gradient(
@@ -882,5 +1628,132 @@
 			rgba(249, 115, 22, 0.075),
 			transparent 56%
 		);
+	}
+
+	@media (max-width: 767px) {
+		.profile-post-mobile-byline {
+			color: rgba(255, 255, 255, 0.38);
+			font-size: 10px;
+		}
+
+		.profile-post-community-row {
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+			gap: 8px;
+		}
+
+		.profile-post-mobile-options {
+			display: flex;
+			flex: 0 0 auto;
+			align-items: center;
+			gap: 4px;
+		}
+
+		.profile-post-icon-button {
+			display: grid;
+			width: 36px;
+			height: 36px;
+			place-items: center;
+			border-radius: 999px;
+			color: rgba(255, 255, 255, 0.48);
+		}
+
+		.profile-post-icon-button:active {
+			background: rgba(255, 255, 255, 0.07);
+			color: rgba(255, 255, 255, 0.9);
+		}
+
+		.profile-post-icon-button.pinned {
+			color: #f0a16c;
+		}
+
+		.profile-actions-sheet {
+			border-right: 0;
+			border-bottom: 0;
+			border-left: 0;
+			border-radius: 20px 20px 0 0;
+		}
+
+		.profile-post-edit-sheet {
+			border-right: 0;
+			border-bottom: 0;
+			border-left: 0;
+			border-radius: 20px 20px 0 0;
+		}
+
+		.community-profile-streak-card {
+			display: grid;
+			grid-template-columns: minmax(0, 1fr) 1px minmax(0, 1fr);
+			align-items: center;
+			margin-top: 16px;
+			border: 1px solid rgba(255, 255, 255, 0.09);
+			border-radius: 12px;
+			background: linear-gradient(110deg, rgba(239, 117, 65, 0.1), rgba(255, 255, 255, 0.025));
+			padding: 12px;
+		}
+
+		.community-profile-streak-item {
+			display: flex;
+			align-items: center;
+			gap: 9px;
+		}
+
+		.community-profile-streak-item > span:last-child {
+			display: grid;
+			gap: 3px;
+		}
+
+		.community-profile-streak-item small {
+			color: rgba(235, 235, 227, 0.48);
+			font-size: 8px;
+		}
+
+		.community-profile-streak-item strong {
+			color: rgba(255, 255, 255, 0.9);
+			font-size: 11px;
+			font-weight: 600;
+		}
+
+		.community-profile-streak-icon {
+			display: grid;
+			width: 31px;
+			height: 31px;
+			flex: 0 0 auto;
+			place-items: center;
+			border: 1px solid rgba(240, 161, 108, 0.24);
+			border-radius: 9px;
+			background: rgba(240, 161, 108, 0.09);
+			color: #f0a16c;
+		}
+
+		.community-profile-streak-icon.best {
+			border-color: rgba(235, 235, 227, 0.13);
+			background: rgba(255, 255, 255, 0.04);
+			color: rgba(255, 255, 255, 0.7);
+		}
+
+		.community-profile-streak-divider {
+			width: 1px;
+			height: 31px;
+			background: rgba(255, 255, 255, 0.1);
+		}
+
+		.profile-action-row {
+			display: flex;
+			width: 100%;
+			min-height: 48px;
+			align-items: center;
+			gap: 12px;
+			border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+			padding: 0 4px;
+			color: rgba(255, 255, 255, 0.78);
+			font-size: 13px;
+			text-align: left;
+		}
+
+		.profile-action-row :global(svg) {
+			color: rgba(255, 255, 255, 0.48);
+		}
 	}
 </style>

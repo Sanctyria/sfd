@@ -1,4 +1,4 @@
-export type CommunityPostKind = 'text' | 'link' | 'image' | 'video';
+export type CommunityPostKind = 'text' | 'link' | 'image' | 'video' | 'audio';
 
 export interface CommunityReply {
 	id?: string;
@@ -15,6 +15,8 @@ export interface CommunityReply {
 	isCommunityOwner?: boolean;
 	isCommunityModerator?: boolean;
 	text: string;
+	mediaUrl?: string | null;
+	mediaKind?: 'image_url' | 'video_url' | null;
 	reactionCount?: number;
 	reacted?: boolean;
 }
@@ -80,6 +82,10 @@ export interface CommunityPost {
 	isBookmarked?: boolean;
 	canManage?: boolean;
 	indexable?: boolean;
+	isNews?: boolean;
+	isProfilePinned?: boolean;
+	isCommunityPinned?: boolean;
+	audioCoverUrl?: string | null;
 	replies: CommunityReply[];
 	joinedCommunity: boolean;
 }

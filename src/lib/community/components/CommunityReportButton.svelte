@@ -10,6 +10,7 @@
 		viewerUsername?: string;
 		returnTo: string;
 		ownContent?: boolean;
+		variant?: 'button' | 'menu';
 	}
 
 	let {
@@ -18,7 +19,8 @@
 		targetLabel,
 		viewerUsername,
 		returnTo,
-		ownContent = false
+		ownContent = false,
+		variant = 'button'
 	}: Props = $props();
 	let open = $state(false);
 	let reason = $state('');
@@ -61,9 +63,10 @@
 		type="button"
 		onclick={startReport}
 		disabled={submitted}
+		class:community-report-menu-item={variant === 'menu'}
 		class="inline-flex h-8 items-center gap-1.5 rounded-full px-2 text-[10px] text-white/45 transition-colors hover:bg-red-300/[0.06] hover:text-red-100 disabled:cursor-default disabled:text-emerald-200/70"
 	>
-		<Flag size={12} />{submitted ? 'Reported' : `Report ${targetLabel}`}
+		<Flag size={variant === 'menu' ? 17 : 12} />{submitted ? 'Reported' : `Report ${targetLabel}`}
 	</button>
 {/if}
 
@@ -133,3 +136,22 @@
 		</dialog>
 	</div>
 {/if}
+
+<style>
+	.community-report-menu-item {
+		display: flex;
+		width: 100%;
+		height: 64px;
+		justify-content: flex-start;
+		gap: 18px;
+		border-radius: 0;
+		padding-inline: 8px;
+		color: rgba(255, 255, 255, 0.88);
+		font-size: 15px;
+	}
+
+	.community-report-menu-item:hover {
+		background: transparent;
+		color: white;
+	}
+</style>
